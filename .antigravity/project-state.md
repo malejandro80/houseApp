@@ -1,12 +1,13 @@
 # Project Context & State
 
 ## 📊 Current Status
-**Version:** 0.2.2-beta
+**Version:** 0.2.3-beta
 **Last Updated:** 2026-02-10
 
 ## 🚀 Implemented Features
-- **UI Fix**: Refactored `FinancialDashboard` cards to prevent tooltip clipping (removed `overflow-hidden` from parent).
-- **Bug Fix**: Fixed Hydration Error in `FinancialDashboard.tsx` (`<div>` inside `<p>`).
+- **UI/Copy Refresh**: Updated `PropertyForm` with cleaner texts (Copywriter) and input prefixes (UX).
+- **UI Fix**: Refactored `FinancialDashboard` cards to prevent tooltip clipping.
+- **Bug Fix**: Fixed Hydration Error in `FinancialDashboard.tsx`.
 - **Project Structure**: FULL REFACTOR to `/src` directory architecture.
 - **Database**: SQL Policies migrated to `/supabase/migrations`.
 - **Imports**: Standardized imports using `@/lib` alias.

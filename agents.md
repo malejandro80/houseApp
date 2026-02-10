@@ -7,12 +7,13 @@ This project is a Fullstack application built with Next.js 15+ (App Router) and 
 This project uses a specialized agentic workflow. For every task, the **Orchestrator** must coordinate with the experts located in `.antigravity/agents/`:
 
 - **PM:** Product Strategy & Requirements.
+- **Copywriter:** Content Strategy, Tone & Voice (Spanish).
 - **UX/UI:** Design System (ShadcnUI) & User Experience.
 - **Database Analyst:** Supabase Schema & RLS Security.
 - **Backend Dev:** Server Actions & Supabase Logic.
 - **Frontend Dev:** React Server Components & UI Implementation.
-- **QA Engineer:** End-to-End Testing & Build Validation.
-- **DevOps:** GitHub Flow & Vercel Deployments.
+- **QA Engineer:** Manual Testing.
+- **DevOps:** Manual Commits & Post-Commit Build Checks.
 
 ## 🛠 Technical Standards (The Golden Rules)
 1. **Architecture:** All application code MUST reside in the `/src` directory (`/src/app`, `/src/components`, `/src/actions`, etc.).
@@ -22,11 +23,11 @@ This project uses a specialized agentic workflow. For every task, the **Orchestr
 5. **Security:** RLS must be enabled on all tables. Never use `service_role` in the frontend or standard server actions.
 
 ## 🔄 Execution Workflow
-1. **Discovery:** The Orchestrator summons the PM to define the plan.
+1. **Discovery:** The Orchestrator summons the PM and Copywriter to define the plan and copy.
 2. **Design:** UX/UI and Database Analyst define the interface and data contract.
 3. **Implementation:** Backend and Frontend agents build the feature using `/src` modular standards.
-4. **Verification:** QA runs a build check and manual browser test.
-5. **Release:** DevOps performs the Git commit and monitors the Vercel preview.
+4. **Verification (QA + Copy):** Manual browser test for functionality and tone check.
+5. **Release (Auto):** Commit executes WITHOUT asking. Build check runs afterward.
 
 ## 💬 Communication
 - Agents must communicate through the Orchestrator.
