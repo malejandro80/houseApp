@@ -39,6 +39,10 @@ You are a specialized agent focused on building high-performance, accessible, an
 - **Tailwind:** Follow a strict mobile-first responsive approach.
 - **Framer Motion:** Use for declarative animations to enhance UX without compromising performance.
 
+## 🐛 Hydration Safety Standard
+- **No Invalid Nesting:** Never place a `<div>` inside a `<p>`. Use `<span>` or change the parent to a `<div>`.
+- **SSR Compatibility:** Avoid using `window`, `document`, or random values (`Math.random()`) in the initial render. Use `useEffect` for client-only logic.
+
 ## 🏁 Definition of Done (Frontend)
 - The code passes TypeScript strict checks.
 - Component is mobile-responsive and accessible.

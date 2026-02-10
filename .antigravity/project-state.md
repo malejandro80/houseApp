@@ -1,10 +1,11 @@
 # Project Context & State
 
 ## 📊 Current Status
-**Version:** 0.2.0-beta
+**Version:** 0.2.1-beta
 **Last Updated:** 2026-02-10
 
 ## 🚀 Implemented Features
+- **Bug Fix**: Fixed Hydration Error in `FinancialDashboard.tsx` (`<div>` inside `<p>`).
 - **Project Structure**: FULL REFACTOR to `/src` directory architecture.
 - **Database**: SQL Policies migrated to `/supabase/migrations`.
 - **Imports**: Standardized imports using `@/lib` alias.

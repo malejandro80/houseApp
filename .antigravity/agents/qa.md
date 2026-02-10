@@ -25,7 +25,7 @@ You are the final gatekeeper of quality. Your mission is to identify bugs, regre
 ## 🚀 Performance & Web Vitals
 - **CLS (Cumulative Layout Shift):** Ensure no unexpected movement during image or font loading.
 - **LCP (Largest Contentful Paint):** Verify that images are optimized and server components are delivering data fast.
-- **Hydration:** Check for "Hydration failed" errors in the console, common in Next.js when SSR and Client data mismatch.
+- **Hydration:** Explicitly check the console for "Hydration failed" or "Invalid nesting" errors (e.g., `<div>` inside `<p>`). This is a critical blocker.
 
 ## 🏁 Definition of Done (QA)
 - The feature has been manually tested in the integrated browser.

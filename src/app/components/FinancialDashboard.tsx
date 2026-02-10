@@ -86,10 +86,10 @@ export default function FinancialDashboard({ result }: FinancialDashboardProps) 
           <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30">
             <DollarSign size={40} className="text-blue-600" />
           </div>
-          <p className="text-xs font-semibold text-blue-600 uppercase mb-1 flex items-center gap-1 relative z-30">
+          <div className="text-xs font-semibold text-blue-600 uppercase mb-1 flex items-center gap-1 relative z-30">
             Tu Bolsillo (Mensual)
             <Tooltip text="Es el dinero que te sobra cada mes para gastar después de pagar todo." />
-          </p>
+          </div>
           <h4 className="text-2xl font-bold text-gray-800">
              {result.cashFlow >= 0 ? '+' : ''}${result.cashFlow.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </h4>
@@ -103,10 +103,10 @@ export default function FinancialDashboard({ result }: FinancialDashboardProps) 
            <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30">
             <Umbrella size={40} className="text-purple-600" />
           </div>
-          <p className="text-xs font-semibold text-purple-600 uppercase mb-1 flex items-center gap-1 relative z-30">
+          <div className="text-xs font-semibold text-purple-600 uppercase mb-1 flex items-center gap-1 relative z-30">
             Fondo Seguridad
             <Tooltip text="Es el dinero que deberías guardar 'por si acaso' la casa se queda vacía un tiempo." />
-          </p>
+          </div>
           <h4 className="text-2xl font-bold text-gray-800">
             ${result.emergencyFund.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </h4>
@@ -120,10 +120,10 @@ export default function FinancialDashboard({ result }: FinancialDashboardProps) 
            <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30">
             <Activity size={40} className="text-gray-600" />
           </div>
-          <p className="text-xs font-semibold text-gray-600 uppercase mb-1 flex items-center gap-1 relative z-30">
+          <div className="text-xs font-semibold text-gray-600 uppercase mb-1 flex items-center gap-1 relative z-30">
             Vs. Mercado
             <Tooltip text="Te dice si tu inversión gana mas (+) o menos (-) dinero que otras casas en la zona." />
-          </p>
+          </div>
           <div className="flex items-end gap-2">
              <h4 className="text-2xl font-bold text-gray-800">
                 {result.comparisonVsMarket > 0 ? '+' : ''}{result.comparisonVsMarket.toFixed(1)}%
