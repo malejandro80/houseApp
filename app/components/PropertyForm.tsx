@@ -4,9 +4,12 @@ import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import dynamic from 'next/dynamic';
 import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator } from 'lucide-react';
-import RentabilityResult from './RentabilityResult';
+import FinancialDashboard from './FinancialDashboard';
+import Tooltip from './Tooltip';
+import { useState } from 'react';
 import { usePropertyProfitability } from '../hooks/usePropertyProfitability';
 import { createClient } from '../../utils/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 type PropertyFormData = {
   propertyType: string;
@@ -19,12 +22,24 @@ type PropertyFormData = {
   estimatedRent: number;
   latitude?: number;
   longitude?: number;
+  ibi: number;
+  community: number;
+  insurance: number;
+  vacancyMonths: number;
 };
 
-export default function PropertyForm() {
+export default function PropertyForm({ user }: { user: User | null }) {
   const supabase = createClient();
-  const { register, handleSubmit, reset, setValue } = useForm<PropertyFormData>();
+  const { register, handleSubmit, reset, setValue, watch } = useForm<PropertyFormData>({
+    defaultValues: {
+        ibi: 0,
+        community: 0,
+        insurance: 0,
+        vacancyMonths: 0
+    }
+  });
   const { result, calculateProfitability, resetResult } = usePropertyProfitability();
+  const [isExpertMode, setIsExpertMode] = useState(false);
 
   // Dynamically import LocationPicker to avoid SSR issues with Leaflet
   const LocationPicker = useMemo(() => dynamic(
@@ -42,33 +57,41 @@ export default function PropertyForm() {
 
   const onSubmit = async (data: PropertyFormData) => {
     calculateProfitability({
-      purchasePrice: data.purchasePrice,
-      estimatedRent: data.estimatedRent,
+      purchasePrice: Number(data.purchasePrice),
+      estimatedRent: Number(data.estimatedRent),
+      expenses: {
+        ibi: Number(data.ibi),
+        community: Number(data.community),
+        insurance: Number(data.insurance),
+        vacancyMonths: Number(data.vacancyMonths),
+      }
     });
 
     try {
-      const dataToSave =  {
-            type: data.propertyType,
-            address: data.location,
-            lat: data.latitude,
-            lon: data.longitude,
-            m2: Number(data.landArea),
-            rooms: Number(data.bedrooms),
-            bathrooms: Number(data.bathrooms),
-            has_garage: data.hasGarage,
-            sale_price: Number(data.purchasePrice),
-            rent_price: Number(data.estimatedRent),
-          }
-      console.log('Saving data to Supabase:', dataToSave);
-      const { error } = await supabase
-        .from('datahouse')
-        .insert([dataToSave]);
+      if (user) {
+        const dataToSave =  {
+              type: data.propertyType,
+              address: data.location,
+              lat: data.latitude,
+              lon: data.longitude,
+              m2: Number(data.landArea),
+              rooms: Number(data.bedrooms),
+              bathrooms: Number(data.bathrooms),
+              has_garage: data.hasGarage,
+              sale_price: Number(data.purchasePrice),
+              rent_price: Number(data.estimatedRent),
+            }
+        console.log('Saving data to Supabase:', dataToSave);
+        const { error } = await supabase
+          .from('datahouse')
+          .insert([dataToSave]);
 
-      if (error) {
-        console.error('Error saving data to Supabase:', error);
-        // Optional: Add UI feedback here if requested
-      } else {
-        console.log('Data saved successfully to Supabase');
+        if (error) {
+          console.error('Error saving data to Supabase:', error);
+          // Optional: Add UI feedback here if requested
+        } else {
+          console.log('Data saved successfully to Supabase');
+        }
       }
     } catch (err) {
       console.error('Unexpected error saving data:', err);
@@ -93,7 +116,9 @@ export default function PropertyForm() {
       <div className="p-4 sm:p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          {user && (
+            <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Property Type */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
@@ -206,6 +231,8 @@ export default function PropertyForm() {
               />
             </div>
           </div>
+          </>
+          )}
 
           <div className="border-t border-gray-100 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -230,7 +257,92 @@ export default function PropertyForm() {
                     />
                 </div>
             </div>
+
           </div>
+
+            {/* Expert Mode Toggle */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-6">
+               <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">Modo Experto</span>
+                  <Tooltip text="Activa para incluir gastos detallados. Ejemplo: IBI, comunidad y seguros para un cálculo de retorno neto más preciso." />
+               </div>
+               <button
+                  type="button"
+                  onClick={() => setIsExpertMode(!isExpertMode)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${isExpertMode ? 'bg-indigo-600' : 'bg-gray-200'}`}
+               >
+                  <span
+                    className={`${
+                      isExpertMode ? 'translate-x-6' : 'translate-x-1'
+                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+               </button>
+            </div>
+
+            {/* Expert Inputs */}
+            {isExpertMode && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-gray-50 p-4 rounded-lg border border-gray-100 animate-fade-in-down mt-4">
+                    
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                            IBI (Anual)
+                            <Tooltip text="Impuesto anual obligatorio sobre la propiedad. Ejemplo: $150 - $800/año dependiendo la zona." />
+                        </label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                            <input
+                                type="number"
+                                {...register('ibi', { min: 0 })}
+                                className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                            Comunidad (Mensual)
+                            <Tooltip text="Cuota mensual de mantenimiento. Ejemplo: $30 - $150/mes si hay elevador o vigilancia." />
+                        </label>
+                        <div className="relative">
+                             <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                            <input
+                                type="number"
+                                {...register('community', { min: 0 })}
+                                className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                            Seguro Hogar (Anual)
+                            <Tooltip text="Protección contra daños. Ejemplo: $150 - $400/año." />
+                        </label>
+                        <div className="relative">
+                             <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                            <input
+                                type="number"
+                                {...register('insurance', { min: 0 })}
+                                className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                            Vacancia (Meses/Año)
+                            <Tooltip text="Tiempo promedio sin inquilino. Ejemplo: 1 mes al año es conservador." />
+                        </label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            {...register('vacancyMonths', { min: 0, max: 12 })}
+                            className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        />
+                    </div>
+
+                </div>
+            )}
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
@@ -250,13 +362,7 @@ export default function PropertyForm() {
         </form>
 
         {result && (
-          <RentabilityResult 
-            annualRent={result.annualRent} 
-            grossYield={result.grossYield} 
-            isProfitable={result.isProfitable}
-            suggestedPrice={result.suggestedPrice}
-            suggestedRent={result.suggestedRent}
-          />
+          <FinancialDashboard result={result} />
         )}
       </div>
     </div>

@@ -35,7 +35,7 @@ export default async function Home() {
           </div>
         </div>
         
-        <PropertyForm />
+        <PropertyForm user={user} />
         
         <footer className="mt-16 text-center text-gray-500 text-sm">
           <p>&copy; {new Date().getFullYear()} HouseApp. Todos los derechos reservados.</p>
