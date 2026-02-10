@@ -80,6 +80,7 @@ export default function PropertyForm({ user }: { user: User | null }) {
               has_garage: data.hasGarage,
               sale_price: Number(data.purchasePrice),
               rent_price: Number(data.estimatedRent),
+              user_id: user.id, // Associate property with logged-in user
             }
         console.log('Saving data to Supabase:', dataToSave);
         const { error } = await supabase

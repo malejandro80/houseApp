@@ -20,7 +20,8 @@ This project uses a specialized agentic workflow. For every task, the **Orchestr
 2. **Database First:** No code shall be written before the `Database Analyst` confirms the schema and RLS policies in `/supabase/migrations`.
 3. **Type Safety:** TypeScript is non-negotiable. Prefer `interfaces` over `types`. Use generated Supabase types for all DB operations.
 4. **Performance:** Prioritize Server Components. Use `'use client'` strictly for interactivity or Web APIs. Wrap client components in `Suspense`.
-5. **Security:** RLS must be enabled on all tables. Never use `service_role` in the frontend or standard server actions.
+5. **English Standard:** All code, file names, folder names, commit messages, and variable names MUST be in English. Spanish is ONLY allowed for user-facing strings (UI text).
+6. **Security:** RLS must be enabled on all tables. Never use `service_role` in the frontend or standard server actions.
 
 ## 🔄 Execution Workflow
 1. **Discovery:** The Orchestrator summons the PM and Copywriter to define the plan and copy.

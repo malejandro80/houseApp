@@ -1,12 +1,15 @@
 # Project Context & State
 
 ## 📊 Current Status
-**Version:** 0.2.3-beta
+**Version:** 0.2.5-beta
 **Last Updated:** 2026-02-10
 
 ## 🚀 Implemented Features
-- **UI/Copy Refresh**: Updated `PropertyForm` with cleaner texts (Copywriter) and input prefixes (UX).
-- **UI Fix**: Refactored `FinancialDashboard` cards to prevent tooltip clipping.
+- **Agent Protocol**: Enforced **ENGLISH ONLY** for code, files, and variables. (Spanish reserved for Copywriter/UI).
+- **Map UX**: Added automatic User Geolocation and centering (`flyTo`) in `LocationPicker`.
+- **Database Mod**: Added 1:N relation (`datahouse` -> `users`) and updated RLS Policies.
+- **Backend Logic**: Updated `PropertyForm` to save `user_id` on new entries.
+- **UI/Copy Refresh**: Updated `PropertyForm` with cleaner texts and inputs.
 - **Bug Fix**: Fixed Hydration Error in `FinancialDashboard.tsx`.
 - **Project Structure**: FULL REFACTOR to `/src` directory architecture.
 - **Database**: SQL Policies migrated to `/supabase/migrations`.

@@ -20,16 +20,35 @@ type LocationPickerProps = {
   initialLng?: number;
 };
 
-function LocationMarker({ onLocationSelect, position, setPosition }: { onLocationSelect: (lat: number, lng: number) => void, position: L.LatLng | null, setPosition: (pos: L.LatLng) => void }) {
-  useMapEvents({
+// Internal component to handle map flyTo effects and clicks
+function MapController({ 
+  onLocationSelect, 
+  position, 
+  setPosition 
+}: { 
+  onLocationSelect: (lat: number, lng: number) => void, 
+  position: L.LatLng | null, 
+  setPosition: (pos: L.LatLng) => void 
+}) {
+  const map = useMapEvents({
     click(e) {
       setPosition(e.latlng);
       onLocationSelect(e.latlng.lat, e.latlng.lng);
     },
+    locationfound(e) {
+      setPosition(e.latlng);
+      onLocationSelect(e.latlng.lat, e.latlng.lng);
+      map.flyTo(e.latlng, 15);
+    },
+  });
+
+  // Trigger location search on mount
+  useState(() => {
+    map.locate();
   });
 
   return position === null ? null : (
-    <Marker position={position}></Marker>
+    <Marker position={position} />
   );
 }
 
@@ -38,12 +57,13 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
     initialLat && initialLng ? new L.LatLng(initialLat, initialLng) : null
   );
 
-  // Default center (e.g., Mexico City or a neutral location if no initial)
-  const center = initialLat && initialLng ? [initialLat, initialLng] : [19.4326, -99.1332]; 
+  // Default center (Fallback: Mexico City)
+  const defaultCenter = [19.4326, -99.1332] as L.LatLngExpression;
+  const mapCenter = initialLat && initialLng ? [initialLat, initialLng] as L.LatLngExpression : defaultCenter;
 
   return (
     <MapContainer 
-      center={center as L.LatLngExpression} 
+      center={mapCenter} 
       zoom={13} 
       scrollWheelZoom={false} 
       style={{ height: '300px', width: '100%', borderRadius: '0.5rem', zIndex: 0 }}
@@ -52,7 +72,7 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <LocationMarker onLocationSelect={onLocationSelect} position={position} setPosition={setPosition} />
+      <MapController onLocationSelect={onLocationSelect} position={position} setPosition={setPosition} />
     </MapContainer>
   );
 }
