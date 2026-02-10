@@ -101,7 +101,7 @@ export default function PropertyForm() {
               </label>
               <select
                 {...register('propertyType', { required: true })}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
               >
                 <option value="house">Casa</option>
                 <option value="apartment">Apartamento</option>
@@ -120,7 +120,7 @@ export default function PropertyForm() {
                 type="text"
                 {...register('location', { required: true })}
                 placeholder="Ej. Centro de la ciudad"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
               />
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function PropertyForm() {
               <input
                 type="number"
                 {...register('landArea', { required: true, min: 0 })}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
               />
             </div>
 
@@ -188,7 +188,7 @@ export default function PropertyForm() {
               <input
                 type="number"
                 {...register('bedrooms', { required: true, min: 0 })}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
               />
             </div>
 
@@ -201,7 +201,7 @@ export default function PropertyForm() {
               <input
                 type="number"
                 {...register('bathrooms', { required: true, min: 0 })}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
               />
             </div>
           </div>
@@ -217,7 +217,7 @@ export default function PropertyForm() {
                     <input
                         type="number"
                         {...register('purchasePrice', { required: true, min: 1 })}
-                        className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50"
+                        className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900"
                     />
                 </div>
                 <div className="space-y-2">
@@ -225,7 +225,7 @@ export default function PropertyForm() {
                     <input
                         type="number"
                         {...register('estimatedRent', { required: true, min: 1 })}
-                        className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50"
+                        className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900"
                     />
                 </div>
             </div>
