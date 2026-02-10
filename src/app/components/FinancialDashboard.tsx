@@ -82,11 +82,13 @@ export default function FinancialDashboard({ result }: FinancialDashboardProps) 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Card 1: Cash Flow */}
-        <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-          <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30">
-            <DollarSign size={40} className="text-blue-600" />
+        <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 relative group hover:shadow-md transition-shadow">
+          <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+              <DollarSign size={48} className="text-blue-600" />
+            </div>
           </div>
-          <div className="text-xs font-semibold text-blue-600 uppercase mb-1 flex items-center gap-1 relative z-30">
+          <div className="text-xs font-semibold text-blue-600 uppercase mb-1 flex items-center gap-1 relative z-30 pr-8">
             Tu Bolsillo (Mensual)
             <Tooltip text="Es el dinero que te sobra cada mes para gastar después de pagar todo." />
           </div>
@@ -99,11 +101,13 @@ export default function FinancialDashboard({ result }: FinancialDashboardProps) 
         </div>
 
         {/* Card 2: Resilience */}
-        <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-           <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30">
-            <Umbrella size={40} className="text-purple-600" />
+        <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 relative group hover:shadow-md transition-shadow">
+          <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Umbrella size={48} className="text-purple-600" />
+            </div>
           </div>
-          <div className="text-xs font-semibold text-purple-600 uppercase mb-1 flex items-center gap-1 relative z-30">
+          <div className="text-xs font-semibold text-purple-600 uppercase mb-1 flex items-center gap-1 relative z-30 pr-8">
             Fondo Seguridad
             <Tooltip text="Es el dinero que deberías guardar 'por si acaso' la casa se queda vacía un tiempo." />
           </div>
@@ -116,11 +120,13 @@ export default function FinancialDashboard({ result }: FinancialDashboardProps) 
         </div>
 
         {/* Card 3: Context / Market */}
-        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 relative overflow-hidden group hover:shadow-md transition-shadow">
-           <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-30">
-            <Activity size={40} className="text-gray-600" />
+        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 relative group hover:shadow-md transition-shadow">
+          <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Activity size={48} className="text-gray-600" />
+            </div>
           </div>
-          <div className="text-xs font-semibold text-gray-600 uppercase mb-1 flex items-center gap-1 relative z-30">
+          <div className="text-xs font-semibold text-gray-600 uppercase mb-1 flex items-center gap-1 relative z-30 pr-8">
             Vs. Mercado
             <Tooltip text="Te dice si tu inversión gana mas (+) o menos (-) dinero que otras casas en la zona." />
           </div>
