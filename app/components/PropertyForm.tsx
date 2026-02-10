@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator } from 'lucide-react';
 import RentabilityResult from './RentabilityResult';
 import { usePropertyProfitability } from '../hooks/usePropertyProfitability';
-import { supabase } from '../../utils/supabase';
+import { createClient } from '../../utils/supabase/client';
 
 type PropertyFormData = {
   propertyType: string;
@@ -22,7 +22,8 @@ type PropertyFormData = {
 };
 
 export default function PropertyForm() {
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<PropertyFormData>();
+  const supabase = createClient();
+  const { register, handleSubmit, reset, setValue } = useForm<PropertyFormData>();
   const { result, calculateProfitability, resetResult } = usePropertyProfitability();
 
   // Dynamically import LocationPicker to avoid SSR issues with Leaflet

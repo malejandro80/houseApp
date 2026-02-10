@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 // Fix for default marker icon in Leaflet with Webpack/Next.js
-// @ts-ignore
+// @ts-expect-error Fix for default marker icon in Leaflet with Webpack/Next.js
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -20,7 +20,7 @@ type LocationPickerProps = {
   initialLng?: number;
 };
 
-function LocationMarker({ onLocationSelect, position, setPosition }: any) {
+function LocationMarker({ onLocationSelect, position, setPosition }: { onLocationSelect: (lat: number, lng: number) => void, position: L.LatLng | null, setPosition: (pos: L.LatLng) => void }) {
   useMapEvents({
     click(e) {
       setPosition(e.latlng);

@@ -2,12 +2,27 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { supabase } from '../../utils/supabase';
 import { ArrowLeft, Map as MapIcon } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '../../utils/supabase/client';
+
+type Property = {
+  id: number;
+  type: string;
+  address: string;
+  lat: number;
+  lon: number;
+  m2: number;
+  rooms: number;
+  bathrooms: number;
+  has_garage: boolean;
+  sale_price: number;
+  rent_price: number;
+};
 
 export default function MapPage() {
-  const [properties, setProperties] = useState<any[]>([]);
+  const supabase = createClient();
+  const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Dynamically import map to avoid SSR issues
@@ -41,7 +56,7 @@ export default function MapPage() {
     }
 
     fetchProperties();
-  }, []);
+  }, [supabase]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">

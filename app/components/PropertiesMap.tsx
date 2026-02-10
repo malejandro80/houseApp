@@ -3,11 +3,11 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { Building2, BedDouble, Bath, Car, DollarSign } from 'lucide-react';
+import { Building2, BedDouble, Bath, Car } from 'lucide-react';
 import RentabilityResult from './RentabilityResult';
 
 // Fix for default marker icon in Leaflet
-// @ts-ignore
+// @ts-expect-error Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',

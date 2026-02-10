@@ -1,11 +1,25 @@
 import Link from "next/link";
+
 import { Map as MapIcon } from "lucide-react";
 import PropertyForm from "./components/PropertyForm";
+import UserMenu from "./components/UserMenu";
+import { createClient } from "../utils/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <main className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="text-xl font-bold text-indigo-600">HouseApp</div>
+            <UserMenu user={user} />
+          </div>
+        </div>
+      </nav>
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
             Calculadora de Inversiones Inmobiliarias
