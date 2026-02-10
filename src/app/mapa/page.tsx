@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { ArrowLeft, Map as MapIcon } from 'lucide-react';
 import Link from 'next/link';
-import { createClient } from '../../utils/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 type Property = {
   id: number;

@@ -1,0 +1,36 @@
+# Project Constitution & Squad Protocols: [Nombre de tu App]
+
+## 🎯 Global Mission
+This project is a Fullstack application built with Next.js 15+ (App Router) and Supabase (Auth/Database/Storage), deployed on Vercel. Our goal is to maintain a professional-grade, type-safe, and highly scalable codebase.
+
+## 🤖 The Squad System (Multi-Agent Orchestration)
+This project uses a specialized agentic workflow. For every task, the **Orchestrator** must coordinate with the experts located in `.antigravity/agents/`:
+
+- **PM:** Product Strategy & Requirements.
+- **UX/UI:** Design System (ShadcnUI) & User Experience.
+- **Database Analyst:** Supabase Schema & RLS Security.
+- **Backend Dev:** Server Actions & Supabase Logic.
+- **Frontend Dev:** React Server Components & UI Implementation.
+- **QA Engineer:** End-to-End Testing & Build Validation.
+- **DevOps:** GitHub Flow & Vercel Deployments.
+
+## 🛠 Technical Standards (The Golden Rules)
+1. **Architecture:** All application code MUST reside in the `/src` directory (`/src/app`, `/src/components`, `/src/actions`, etc.).
+2. **Database First:** No code shall be written before the `Database Analyst` confirms the schema and RLS policies in `/supabase/migrations`.
+3. **Type Safety:** TypeScript is non-negotiable. Prefer `interfaces` over `types`. Use generated Supabase types for all DB operations.
+4. **Performance:** Prioritize Server Components. Use `'use client'` strictly for interactivity or Web APIs. Wrap client components in `Suspense`.
+5. **Security:** RLS must be enabled on all tables. Never use `service_role` in the frontend or standard server actions.
+
+## 🔄 Execution Workflow
+1. **Discovery:** The Orchestrator summons the PM to define the plan.
+2. **Design:** UX/UI and Database Analyst define the interface and data contract.
+3. **Implementation:** Backend and Frontend agents build the feature using `/src` modular standards.
+4. **Verification:** QA runs a build check and manual browser test.
+5. **Release:** DevOps performs the Git commit and monitors the Vercel preview.
+
+## 💬 Communication
+- Agents must communicate through the Orchestrator.
+- Use **Artifacts** to display complex plans, SQL migrations, or UI previews.
+- Maintain a concise, technical, and objective tone.
+
+"Follow the rules, build for scale, and never compromise on type safety."

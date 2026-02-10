@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Map as MapIcon } from "lucide-react";
 import PropertyForm from "./components/PropertyForm";
 import UserMenu from "./components/UserMenu";
-import { createClient } from "../utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
   const supabase = await createClient();

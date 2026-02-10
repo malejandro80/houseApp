@@ -8,7 +8,7 @@ import FinancialDashboard from './FinancialDashboard';
 import Tooltip from './Tooltip';
 import { useState } from 'react';
 import { usePropertyProfitability } from '../hooks/usePropertyProfitability';
-import { createClient } from '../../utils/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 
 type PropertyFormData = {
