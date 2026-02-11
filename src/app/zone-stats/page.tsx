@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
 import { getUserZones, getZoneHistory, Zone, ZoneHistory } from '@/app/actions/zone-actions';
 import { ArrowLeft, BarChart3, ChevronDown, Loader2, MapPin, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import InfoTooltip from '@/app/components/Tooltip';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ZoneStatsPage() {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -65,6 +67,22 @@ export default function ZoneStatsPage() {
      });
   };
 
+  // Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -104,7 +122,12 @@ export default function ZoneStatsPage() {
                         className="flex items-center gap-2 font-bold text-gray-900 group"
                     >
                         <span className="text-lg">{selectedZone ? selectedZone.name : 'Seleccionar Zona'}</span>
-                        <ChevronDown size={16} className={`text-gray-400 group-hover:text-blue-600 transition-transform ${isZoneSelectorOpen ? 'rotate-180' : ''}`} />
+                        <motion.div
+                            animate={{ rotate: isZoneSelectorOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <ChevronDown size={16} className="text-gray-400 group-hover:text-blue-600" />
+                        </motion.div>
                     </button>
                     {selectedZone && (
                         <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
@@ -113,13 +136,20 @@ export default function ZoneStatsPage() {
                     )}
 
                     {/* Zone Selector Dropdown */}
+                    <AnimatePresence>
                     {isZoneSelectorOpen && (
                         <>
                             <div 
                                 className="fixed inset-0 z-40 bg-black/5" 
                                 onClick={() => setIsZoneSelectorOpen(false)}
                             />
-                            <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                            <motion.div 
+                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 z-50 py-2 overflow-hidden"
+                            >
                                 <p className="text-xs font-semibold text-gray-400 px-4 py-2 uppercase tracking-wide">Tus Zonas Guardadas</p>
                                 {zones.map(zone => (
                                     <button
@@ -131,7 +161,7 @@ export default function ZoneStatsPage() {
                                         className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center justify-between ${selectedZone?.id === zone.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
                                     >
                                         <span>{zone.name}</span>
-                                        {selectedZone?.id === zone.id && <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+                                        {selectedZone?.id === zone.id && <motion.div layoutId="activeZoneIndicator" className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
                                     </button>
                                 ))}
                                 {zones.length === 0 && (
@@ -139,9 +169,10 @@ export default function ZoneStatsPage() {
                                         No tienes zonas guardadas via <Link href="/map" className="text-blue-600 underline">Mapa</Link>
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
                         </>
                     )}
+                    </AnimatePresence>
                 </div>
             </div>
             
@@ -153,31 +184,52 @@ export default function ZoneStatsPage() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {!selectedZone ? (
-             <div className="text-center py-20">
+             <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-20"
+             >
                 <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <BarChart3 className="text-blue-500 w-8 h-8" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Selecciona una zona para comenzar</h2>
                 <p className="text-gray-500 max-w-md mx-auto">Selecciona una de tus zonas guardadas arriba para ver el análisis histórico de precios y rentabilidad.</p>
-                <Link href="/map" className="inline-block mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                    Ir al Mapa
+                <Link href="/map">
+                    <motion.span 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="inline-block mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors cursor-pointer"
+                    >
+                        Ir al Mapa
+                    </motion.span>
                 </Link>
-            </div>
+            </motion.div>
         ) : loadingHistory ? (
             <div className="flex flex-col items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
                 <p className="text-gray-500">Cargando histórico...</p>
             </div>
         ) : history.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-gray-200">
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl p-8 text-center border border-gray-200"
+            >
                 <p className="text-gray-500">Aún no hay datos históricos suficientes para esta zona. <br/>Vuelve mañana después de la 1:00 AM.</p>
-            </div>
+            </motion.div>
         ) : (
-            <>
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+            >
                 {/* Key Metrics Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Precio Promedio</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <motion.div variants={itemVariants} whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-shadow">
+                        <div className="flex items-center gap-1 mb-1">
+                            <p className="text-xs text-gray-500 uppercase font-semibold">Precio Promedio</p>
+                            <InfoTooltip text="Promedio del precio de lista de todas las propiedades activas en esta zona." />
+                        </div>
                         <h3 className="text-2xl font-bold text-gray-900 tracking-tight">
                             ${latestStats?.avg_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </h3>
@@ -187,33 +239,42 @@ export default function ZoneStatsPage() {
                                 {Math.abs(priceChange.value).toFixed(1)}% vs ayer
                             </span>
                         )}
-                    </div>
+                    </motion.div>
                     
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Precio m²</p>
+                    <motion.div variants={itemVariants} whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-shadow">
+                        <div className="flex items-center gap-1 mb-1">
+                            <p className="text-xs text-gray-500 uppercase font-semibold">Precio m²</p>
+                            <InfoTooltip text="Valor promedio por metro cuadrado de construcción. Indicador clave de plusvalía." />
+                        </div>
                         <h3 className="text-2xl font-bold text-gray-900 tracking-tight">
                             ${latestStats?.avg_m2_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </h3>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                        <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Propiedades</p>
+                    <motion.div variants={itemVariants} whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-shadow">
+                        <div className="flex items-center gap-1 mb-1">
+                             <p className="text-xs text-gray-500 uppercase font-semibold">Propiedades</p>
+                             <InfoTooltip text="Número total de propiedades disponibles en el mercado dentro de la zona." />
+                        </div>
                         <h3 className="text-2xl font-bold text-gray-900 tracking-tight">
                             {latestStats?.property_count}
                         </h3>
                         <p className="text-xs text-gray-400 mt-1">En el mercado</p>
-                    </div>
+                    </motion.div>
 
-                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                         <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Rentabilidad Est.</p>
+                    <motion.div variants={itemVariants} whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-shadow">
+                         <div className="flex items-center gap-1 mb-1">
+                            <p className="text-xs text-gray-500 uppercase font-semibold">Rentabilidad Est.</p>
+                            <InfoTooltip text="Retorno de inversión anual estimado (ROI) basado en rentas promedio vs precio de venta." />
+                         </div>
                          <h3 className="text-2xl font-bold text-blue-600 tracking-tight">
                             {latestStats?.avg_roi ? `${latestStats.avg_roi.toFixed(1)}%` : 'N/A'}
                          </h3>
-                    </div>
+                    </motion.div>
                 </div>
 
                 {/* Price Trend Chart */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-bold text-gray-900">Tendencia de Precios</h3>
                         {/* Period Selector could go here */}
@@ -243,7 +304,7 @@ export default function ZoneStatsPage() {
                                     tickLine={false}
                                     domain={['auto', 'auto']}
                                 />
-                                <Tooltip 
+                                <RechartsTooltip 
                                     labelFormatter={(value) => formatTooltipDate(String(value))}
                                     formatter={(val: number | undefined) => [`$${(val || 0).toLocaleString()}`, 'Precio Promedio']}
                                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -255,14 +316,15 @@ export default function ZoneStatsPage() {
                                     strokeWidth={3}
                                     fillOpacity={1} 
                                     fill="url(#colorPrice)" 
+                                    animationDuration={1500}
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
-                </div>
+                </motion.div>
 
                  {/* Price per m2 Trend Chart */}
-                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                 <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                     <h3 className="font-bold text-gray-900 mb-6">Evolución Precio por m²</h3>
                     <div className="h-[250px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -282,7 +344,7 @@ export default function ZoneStatsPage() {
                                     tickLine={false}
                                     domain={['auto', 'auto']}
                                 />
-                                <Tooltip 
+                                <RechartsTooltip 
                                     labelFormatter={(value) => formatTooltipDate(String(value))}
                                     formatter={(val: number | undefined) => [`$${(val || 0).toLocaleString()}`, 'Precio m²']}
                                 />
@@ -292,13 +354,14 @@ export default function ZoneStatsPage() {
                                     stroke="#10b981" 
                                     strokeWidth={3}
                                     dot={false}
+                                    animationDuration={1500}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
-                </div>
+                </motion.div>
 
-            </>
+            </motion.div>
         )}
       </main>
     </div>

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import dynamic from 'next/dynamic';
 import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator, AlertCircle, Upload, X, Star, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import FinancialDashboard from './FinancialDashboard';
 import Tooltip from './Tooltip';
@@ -335,8 +336,16 @@ export default function PropertyForm({ user }: { user: User | null }) {
                  {/* Previews Grid */}
                  {previewUrls.length > 0 && (
                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                         <AnimatePresence>
                          {previewUrls.map((url, index) => (
-                             <div key={index} className={`relative group aspect-square rounded-lg overflow-hidden border-2 transition-all ${index === coverIndex ? 'border-yellow-400 ring-2 ring-yellow-400 ring-offset-2' : 'border-gray-200'}`}>
+                             <motion.div 
+                                key={url} // Use URL as key
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                layout
+                                className={`relative group aspect-square rounded-lg overflow-hidden border-2 transition-all ${index === coverIndex ? 'border-yellow-400 ring-2 ring-yellow-400 ring-offset-2' : 'border-gray-200'}`}
+                             >
                                  <Image 
                                      src={url} 
                                      alt={`Preview ${index}`} 
@@ -373,8 +382,9 @@ export default function PropertyForm({ user }: { user: User | null }) {
                                          PORTADA
                                      </div>
                                  )}
-                             </div>
+                             </motion.div>
                          ))}
+                         </AnimatePresence>
                      </div>
                  )}
              </div>
@@ -510,8 +520,14 @@ export default function PropertyForm({ user }: { user: User | null }) {
             </div>
 
             {/* Expert Inputs */}
+            <AnimatePresence>
             {isExpertMode && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-gray-50 p-4 rounded-lg border border-gray-100 animate-fade-in-down mt-4">
+                <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-gray-50 p-4 rounded-lg border border-gray-100 mt-4 overflow-hidden"
+                >
                     
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
@@ -571,8 +587,9 @@ export default function PropertyForm({ user }: { user: User | null }) {
                         />
                     </div>
 
-                </div>
+                </motion.div>
             )}
+            </AnimatePresence>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
@@ -582,9 +599,11 @@ export default function PropertyForm({ user }: { user: User | null }) {
             >
               Limpiar
             </button>
-            <button
+            <motion.button
               type="submit"
-              className="w-full sm:w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl transform active:scale-95 duration-200 order-1 sm:order-2"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full sm:w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl order-1 sm:order-2"
             >
               {isUploading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -594,7 +613,7 @@ export default function PropertyForm({ user }: { user: User | null }) {
               ) : (
                 'Calcular y Guardar'
               )}
-            </button>
+            </motion.button>
           </div>
         </form>
 

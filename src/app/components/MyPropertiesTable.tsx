@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
 import { Building2, MapPin, TrendingUp, DollarSign } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -69,32 +70,37 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
-          {properties.map((property) => {
+          {properties.map((property, index) => {
             const { netReturn, health } = calculateProfitabilityForList(property.sale_price, property.rent_price);
             const healthStyle = getHealthLabel(health);
 
             return (
-              <tr 
+              <motion.tr 
                 key={property.id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
                 onClick={() => router.push(`/my-properties/${property.id}`)}
-                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                className="hover:bg-gray-50 transition-colors cursor-pointer group"
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 relative rounded-full overflow-hidden bg-blue-100 text-blue-600 flex items-center justify-center">
-                      {property.cover_image ? (
-                         <Image 
-                            src={property.cover_image} 
-                            alt={property.title || 'Propiedad'} 
-                            fill
-                            className="object-cover"
-                         />
-                      ) : (
-                        <Building2 className="h-5 w-5" />
-                      )}
+                    <div className="relative h-10 w-10 flex-shrink-0">
+                         {property.cover_image ? (
+                             <Image 
+                                src={property.cover_image} 
+                                alt={property.title || 'Propiedad'} 
+                                fill
+                                className="object-cover rounded-full"
+                             />
+                         ) : (
+                            <div className="h-full w-full rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                <Building2 className="h-5 w-5" />
+                            </div>
+                         )}
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{property.title || 'Propiedad sin título'}</div>
+                      <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{property.title || 'Propiedad sin título'}</div>
                       <div className="text-xs text-gray-500 capitalize">{property.type}</div>
                     </div>
                   </div>
@@ -117,7 +123,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                     {netReturn.toFixed(1)}% ({healthStyle.text})
                   </span>
                 </td>
-              </tr>
+              </motion.tr>
             );
           })}
         </tbody>

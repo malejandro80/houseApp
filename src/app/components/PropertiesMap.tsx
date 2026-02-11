@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { getZoneStats, ZoneStats } from '@/app/actions/get-zone-stats';
 import { getUserZones, createZone, deleteZone, Zone } from '@/app/actions/zone-actions';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Property = {
   id: number;
@@ -281,19 +282,33 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
       </MapContainer>
 
       {/* Floating Action Button (Top-Left) */}
+      <AnimatePresence>
       {!isAnalyzerOpen && (
-        <button 
+        <motion.button 
+           initial={{ scale: 0, opacity: 0 }}
+           animate={{ scale: 1, opacity: 1 }}
+           exit={{ scale: 0, opacity: 0 }}
+           whileHover={{ scale: 1.05 }}
+           whileTap={{ scale: 0.95 }}
            onClick={handleOpenAnalyzer}
-           className="absolute top-4 left-16 bg-white shadow-lg border border-gray-200 z-[400] py-2 px-4 rounded-full hover:bg-gray-50 hover:scale-105 transition-all active:scale-95 text-gray-700 flex items-center gap-2 font-medium text-sm group"
+           className="absolute top-4 left-16 bg-white shadow-lg border border-gray-200 z-[400] py-2 px-4 rounded-full hover:bg-gray-50 text-gray-700 flex items-center gap-2 font-medium text-sm group"
         >
            <Layers className="text-blue-600 w-4 h-4" />
            <span>Radar de Precios</span>
-        </button>
+        </motion.button>
       )}
+      </AnimatePresence>
 
       {/* Analyzer Drawer - LEFT aligned */}
+      <AnimatePresence>
       {isAnalyzerOpen && (
-        <div className="absolute top-4 left-16 z-[500] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col animate-fade-in-up max-h-[calc(100%-2rem)]">
+        <motion.div 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -20, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="absolute top-4 left-16 z-[500] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[calc(100%-2rem)]"
+        >
              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
                 <div className="flex items-center gap-2">
                     <Radar className="w-5 h-5" />
@@ -418,7 +433,14 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                             <div className="flex justify-center py-8"><Loader2 className="animate-spin text-blue-500" /></div>
                         ) : zones.length > 0 ? (
                             zones.map(zone => (
-                                <div key={zone.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:bg-gray-100 transition-colors">
+                                <motion.div 
+                                    key={zone.id} 
+                                    layout
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    whileHover={{ scale: 1.02 }}
+                                    className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:bg-gray-100 transition-colors"
+                                >
                                     <div className="flex justify-between items-start mb-2">
                                         <div onClick={() => handleSelectZone(zone)} className="cursor-pointer flex-1">
                                             <h4 className="font-bold text-gray-800 text-sm">{zone.name}</h4>
@@ -468,7 +490,7 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                                             Estadísticas
                                         </Link>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))
                         ) : (
                             <div className="text-center py-8 text-gray-400">
@@ -479,8 +501,9 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                     </div>
                 )}
             </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
 
       <style jsx global>{`
