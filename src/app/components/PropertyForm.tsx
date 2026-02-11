@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import dynamic from 'next/dynamic';
-import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator, AlertCircle } from 'lucide-react';
+import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator, AlertCircle, Upload, X, Star, Image as ImageIcon, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import FinancialDashboard from './FinancialDashboard';
 import Tooltip from './Tooltip';
 import { usePropertyProfitability } from '../hooks/usePropertyProfitability';
@@ -11,6 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
 
 // Define Zod Schema
 const propertySchema = z.object({
@@ -55,6 +57,55 @@ export default function PropertyForm({ user }: { user: User | null }) {
 
   const { result, calculateProfitability, resetResult } = usePropertyProfitability();
   const [isExpertMode, setIsExpertMode] = useState(false);
+  
+  // Image handling state
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [coverIndex, setCoverIndex] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    
+    // Validate total images
+    if (selectedImages.length + newFiles.length > 5) {
+      alert('Máximo 5 imágenes permitidas');
+      return;
+    }
+
+    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+    
+    setSelectedImages(prev => [...prev, ...newFiles]);
+    setPreviewUrls(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...selectedImages];
+    const newPreviews = [...previewUrls];
+    
+    // Revoke object URL to avoid memory leaks
+    URL.revokeObjectURL(newPreviews[index]);
+    
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+    
+    setSelectedImages(newImages);
+    setPreviewUrls(newPreviews);
+    
+    // Adjust cover index if needed
+    if (index === coverIndex) {
+      setCoverIndex(0);
+    } else if (index < coverIndex) {
+      setCoverIndex(prev => prev - 1);
+    }
+  };
+
+  const setCover = (index: number) => {
+    setCoverIndex(index);
+  };
 
   // Dynamically import LocationPicker to avoid SSR issues with Leaflet
   const LocationPicker = useMemo(() => dynamic(
@@ -82,8 +133,41 @@ export default function PropertyForm({ user }: { user: User | null }) {
       }
     });
 
+    setIsUploading(true);
     try {
       if (user) {
+        // Upload images first
+        const uploadedUrls: string[] = [];
+        
+        for (const file of selectedImages) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+          const filePath = `${user.id}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('property-images')
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('property-images')
+            .getPublicUrl(filePath);
+
+          uploadedUrls.push(publicUrl);
+        }
+
+        // Determine cover image
+        let coverImageUrl = null;
+        if (uploadedUrls.length > 0) {
+            // If cover index is valid, use it. Otherwise use first image.
+            const coverIdx = coverIndex < uploadedUrls.length ? coverIndex : 0;
+            coverImageUrl = uploadedUrls[coverIdx];
+        }
+
         const dataToSave =  {
               type: data.propertyType,
               address: data.location,
@@ -98,6 +182,8 @@ export default function PropertyForm({ user }: { user: User | null }) {
               title: data.title || null,
               contact_phone: data.contactPhone || null,
               user_id: user.id, // Associate property with logged-in user
+              images: uploadedUrls,
+              cover_image: coverImageUrl
             }
        
         const { error } = await supabase
@@ -106,18 +192,31 @@ export default function PropertyForm({ user }: { user: User | null }) {
 
         if (error) {
           console.error('Error saving data to Supabase:', error);
+          alert('Error al guardar la propiedad. Por favor intenta de nuevo.');
         } else {
           console.log('Data saved successfully to Supabase');
+          // Reset form and images
+          reset();
+          setSelectedImages([]);
+          setPreviewUrls([]);
+          setCoverIndex(0);
+          alert('Propiedad guardada exitosamente!');
         }
       }
     } catch (err) {
       console.error('Unexpected error saving data:', err);
+      alert('Ocurrió un error inesperado.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleReset = () => {
     reset();
     resetResult();
+    setSelectedImages([]);
+    setPreviewUrls([]);
+    setCoverIndex(0);
   };
 
   return (
@@ -199,6 +298,86 @@ export default function PropertyForm({ user }: { user: User | null }) {
               />
               {errors.location && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.location.message}</p>}
             </div>
+          </div>
+
+          {/* Image Upload Section */}
+          <div className="space-y-4 pt-4 border-t border-gray-100">
+             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                 <ImageIcon className="w-5 h-5 text-blue-600" />
+                 Imágenes de la Propiedad
+             </h3>
+             <p className="text-sm text-gray-500">
+                 Sube hasta 5 fotos. La imagen marcada con estrella será la portada.
+             </p>
+             
+             {/* Upload Area */}
+             <div className="flex flex-col gap-4">
+                 {selectedImages.length < 5 && (
+                    <div className="flex items-center justify-center w-full">
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                <p className="text-sm text-gray-500 font-semibold">Haz clic para subir imágenes</p>
+                                <p className="text-xs text-gray-500">PNG, JPG (Máx. 5)</p>
+                            </div>
+                            <input 
+                                type="file" 
+                                className="hidden" 
+                                multiple 
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                disabled={selectedImages.length >= 5}
+                            />
+                        </label>
+                    </div>
+                 )}
+
+                 {/* Previews Grid */}
+                 {previewUrls.length > 0 && (
+                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                         {previewUrls.map((url, index) => (
+                             <div key={index} className={`relative group aspect-square rounded-lg overflow-hidden border-2 transition-all ${index === coverIndex ? 'border-yellow-400 ring-2 ring-yellow-400 ring-offset-2' : 'border-gray-200'}`}>
+                                 <Image 
+                                     src={url} 
+                                     alt={`Preview ${index}`} 
+                                     fill 
+                                     className="object-cover"
+                                 />
+                                 
+                                 {/* Overlay Actions */}
+                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                                     <div className="flex justify-end">
+                                         <button
+                                             type="button"
+                                             onClick={() => removeImage(index)}
+                                             className="p-1 bg-white/90 rounded-full text-red-500 hover:bg-white transition-colors"
+                                             title="Eliminar"
+                                         >
+                                             <X size={14} />
+                                         </button>
+                                     </div>
+                                     <div className="flex justify-center">
+                                         <button
+                                             type="button"
+                                             onClick={() => setCover(index)}
+                                             className={`p-1.5 rounded-full backdrop-blur-sm transition-all ${index === coverIndex ? 'bg-yellow-400 text-white' : 'bg-white/30 text-white hover:bg-yellow-400'}`}
+                                             title={index === coverIndex ? "Portada actual" : "Establecer como portada"}
+                                         >
+                                             <Star size={16} fill={index === coverIndex ? "currentColor" : "none"} />
+                                         </button>
+                                     </div>
+                                 </div>
+                                 
+                                 {index === coverIndex && (
+                                     <div className="absolute top-2 left-2 bg-yellow-400 text-xs font-bold px-2 py-0.5 rounded-md shadow-sm text-white">
+                                         PORTADA
+                                     </div>
+                                 )}
+                             </div>
+                         ))}
+                     </div>
+                 )}
+             </div>
           </div>
 
           {/* Map Section */}
@@ -407,7 +586,14 @@ export default function PropertyForm({ user }: { user: User | null }) {
               type="submit"
               className="w-full sm:w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl transform active:scale-95 duration-200 order-1 sm:order-2"
             >
-              Calcular Retorno
+              {isUploading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Guardando...
+                </span>
+              ) : (
+                'Calcular y Guardar'
+              )}
             </button>
           </div>
         </form>

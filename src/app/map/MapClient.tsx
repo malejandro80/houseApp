@@ -18,6 +18,8 @@ type Property = {
   has_garage: boolean;
   sale_price: number;
   rent_price: number;
+  cover_image?: string | null;
+  images?: string[];
 };
 
 export default function MapClient() {

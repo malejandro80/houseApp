@@ -33,6 +33,10 @@ You are a specialized agent focused on building high-performance, accessible, an
 - **Dynamic Loading:** Use for non-critical, heavy components.
 - **Images:** Use WebP, include size data, and implement lazy loading. Use `https://placekitten.com/` for placeholder seed data.
 - **State Management:** Avoid `'use client'` for data fetching. Leverage Next.js SSR and `nuqs` for state that should persist in the URL.
+- **No comments in code (self-documenting).**
+- **No file exceeds 500 lines.**
+- **Mobile-First:** Always design and develop with mobile as the primary target. Desktop is an enhancement. 
+
 
 ## 🎨 UI & Styling Protocols
 - **Shadcn UI:** Use as the base for all primitive components.

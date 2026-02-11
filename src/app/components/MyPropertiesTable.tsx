@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
 import { Building2, MapPin, TrendingUp, DollarSign } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 // Use same type as DB or define new interface
 interface SavedProperty {
@@ -14,12 +16,14 @@ interface SavedProperty {
   sale_price: number;
   rent_price: number;
   created_at: string;
+  cover_image: string | null;
 }
 
 export default function MyPropertiesTable({ userId }: { userId: string }) {
   const [properties, setProperties] = useState<SavedProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -70,11 +74,24 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
             const healthStyle = getHealthLabel(health);
 
             return (
-              <tr key={property.id} className="hover:bg-gray-50 transition-colors">
+              <tr 
+                key={property.id} 
+                onClick={() => router.push(`/my-properties/${property.id}`)}
+                className="hover:bg-gray-50 transition-colors cursor-pointer"
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                      <Building2 className="h-5 w-5" />
+                    <div className="flex-shrink-0 h-10 w-10 relative rounded-full overflow-hidden bg-blue-100 text-blue-600 flex items-center justify-center">
+                      {property.cover_image ? (
+                         <Image 
+                            src={property.cover_image} 
+                            alt={property.title || 'Propiedad'} 
+                            fill
+                            className="object-cover"
+                         />
+                      ) : (
+                        <Building2 className="h-5 w-5" />
+                      )}
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">{property.title || 'Propiedad sin título'}</div>

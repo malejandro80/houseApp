@@ -19,22 +19,8 @@ export default async function Navbar() {
               <span className="hidden sm:inline">HouseApp</span>
             </Link>
             
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Link href="/" className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Calculadora
-              </Link>
-              {user && (
-                <>
-                  <Link href="/my-properties" className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                    Mis Propiedades
-                  </Link>
-                   <Link href="/map" className="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                    Mapa Global
-                  </Link>
-                </>
-              )}
-            </div>
+            {/* Desktop Nav - Removed in favor of Side Nav */}
+            <div className="hidden md:block" />
           </div>
           
           <div className="flex items-center gap-3">

@@ -17,6 +17,9 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
   - `/src/app/api`: Only for webhooks or external API integrations (Route Handlers).
 - **Naming:** - Use lowercase-dashed for file names (e.g., `update-user-profile.ts`).
   - Server Action files must include `'use server'` at the top.
+- **No comments in code (self-documenting).**
+- **No file exceeds 500 lines.**
+- **Mobile-First:** Always design and develop with mobile as the primary target. Desktop is an enhancement. 
 
 ## 💻 Coding Standards
 - **Functional Logic:** Use functional programming patterns; avoid classes for service layers.
