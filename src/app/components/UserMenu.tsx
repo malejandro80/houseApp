@@ -58,7 +58,9 @@ export default function UserMenu({ user }: { user: User | null }) {
              <p className="text-xs text-gray-500 truncate mt-0.5">{user.email}</p>
           </div>
           
-          <div className="py-1">
+
+
+          <div className="py-1 border-t border-gray-100">
             <button
                 onClick={handleSignOut}
                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors flex items-center gap-2"

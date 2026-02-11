@@ -1,43 +1,58 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import dynamic from 'next/dynamic';
-import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator } from 'lucide-react';
+import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator, AlertCircle } from 'lucide-react';
 import FinancialDashboard from './FinancialDashboard';
 import Tooltip from './Tooltip';
-import { useState } from 'react';
 import { usePropertyProfitability } from '../hooks/usePropertyProfitability';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-type PropertyFormData = {
-  propertyType: string;
-  landArea: number; // in sq meters
-  location: string;
-  bedrooms: number;
-  bathrooms: number;
-  hasGarage: boolean;
-  purchasePrice: number;
-  estimatedRent: number;
-  latitude?: number;
-  longitude?: number;
-  ibi: number;
-  community: number;
-  insurance: number;
-  vacancyMonths: number;
-};
+// Define Zod Schema
+const propertySchema = z.object({
+  title: z.string().optional(),
+  contactPhone: z.string().optional(),
+  propertyType: z.string().min(1, 'Selecciona un tipo de propiedad'),
+  location: z.string().min(3, 'La ubicación es requerida (mín. 3 caracteres)'),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  landArea: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
+  bedrooms: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
+  bathrooms: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
+  hasGarage: z.boolean().optional(),
+  purchasePrice: z.coerce.number().min(1, 'El precio debe ser mayor a 0'),
+  estimatedRent: z.coerce.number().min(1, 'El alquiler debe ser mayor a 0'),
+  ibi: z.coerce.number().min(0).default(0),
+  community: z.coerce.number().min(0).default(0),
+  insurance: z.coerce.number().min(0).default(0),
+  vacancyMonths: z.coerce.number().min(0).max(12, 'Máximo 12 meses').default(0),
+});
+
+type PropertyFormData = z.infer<typeof propertySchema>;
 
 export default function PropertyForm({ user }: { user: User | null }) {
   const supabase = createClient();
-  const { register, handleSubmit, reset, setValue, watch } = useForm<PropertyFormData>({
+  const { 
+    register, 
+    handleSubmit, 
+    reset, 
+    setValue, 
+    formState: { errors } 
+  } = useForm({
+    resolver: zodResolver(propertySchema),
     defaultValues: {
         ibi: 0,
         community: 0,
         insurance: 0,
-        vacancyMonths: 0
+        vacancyMonths: 0,
+        hasGarage: false
     }
   });
+
   const { result, calculateProfitability, resetResult } = usePropertyProfitability();
   const [isExpertMode, setIsExpertMode] = useState(false);
 
@@ -77,19 +92,20 @@ export default function PropertyForm({ user }: { user: User | null }) {
               m2: Number(data.landArea),
               rooms: Number(data.bedrooms),
               bathrooms: Number(data.bathrooms),
-              has_garage: data.hasGarage,
+              has_garage: data.hasGarage || false,
               sale_price: Number(data.purchasePrice),
               rent_price: Number(data.estimatedRent),
+              title: data.title || null,
+              contact_phone: data.contactPhone || null,
               user_id: user.id, // Associate property with logged-in user
             }
-        console.log('Saving data to Supabase:', dataToSave);
+       
         const { error } = await supabase
           .from('datahouse')
           .insert([dataToSave]);
 
         if (error) {
           console.error('Error saving data to Supabase:', error);
-          // Optional: Add UI feedback here if requested
         } else {
           console.log('Data saved successfully to Supabase');
         }
@@ -119,6 +135,37 @@ export default function PropertyForm({ user }: { user: User | null }) {
           
           {user && (
             <>
+            <div className="space-y-4 sm:space-y-6 mb-6 pb-6 border-b border-gray-100">
+               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                 Información Básica
+               </h3>
+               
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {/* Title (Optional) */}
+                <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">Título (Opcional)</label>
+                 <input
+                   type="text"
+                   {...register('title')}
+                   placeholder="Ej. Casa moderna en centro histórico"
+                   className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                 />
+               </div>
+
+                {/* Contact Phone (Optional) */}
+                <div className="space-y-2">
+                 <label className="text-sm font-medium text-gray-700">Teléfono de Contacto (Opcional)</label>
+                 <input
+                   type="tel"
+                   {...register('contactPhone')}
+                   placeholder="+52 555 123 4567"
+                   className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                 />
+               </div>
+            </div>
+          </div>
+          
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Property Type */}
             <div className="space-y-2">
@@ -127,14 +174,15 @@ export default function PropertyForm({ user }: { user: User | null }) {
                 Tipo de Propiedad
               </label>
               <select
-                {...register('propertyType', { required: true })}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                {...register('propertyType')}
+                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.propertyType ? 'border-red-500' : 'border-gray-300'}`}
               >
                 <option value="house">Casa</option>
                 <option value="apartment">Apartamento</option>
                 <option value="commercial">Local Comercial</option>
                 <option value="land">Terreno</option>
               </select>
+              {errors.propertyType && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.propertyType.message}</p>}
             </div>
 
              {/* Location */}
@@ -145,10 +193,11 @@ export default function PropertyForm({ user }: { user: User | null }) {
               </label>
               <input
                 type="text"
-                {...register('location', { required: true })}
+                {...register('location')}
                 placeholder="Ej. Centro de la ciudad"
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
               />
+              {errors.location && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.location.message}</p>}
             </div>
           </div>
 
@@ -161,22 +210,9 @@ export default function PropertyForm({ user }: { user: User | null }) {
             <div className="h-[300px] w-full border border-gray-300 rounded-lg overflow-hidden relative z-0">
                 <LocationPicker onLocationSelect={onLocationSelect} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <input 
-                    type="text" 
-                    placeholder="Latitud" 
-                    readOnly 
-                    {...register('latitude')}
-                    className="bg-gray-50 text-xs p-2 rounded border border-gray-200 text-gray-500"
-                />
-                <input 
-                    type="text" 
-                    placeholder="Longitud" 
-                    readOnly 
-                    {...register('longitude')}
-                    className="bg-gray-50 text-xs p-2 rounded border border-gray-200 text-gray-500"
-                />
-            </div>
+            {/* Hidden Inputs for Zod Registration */}
+            <input type="hidden" {...register('latitude')} />
+            <input type="hidden" {...register('longitude')} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -186,11 +222,12 @@ export default function PropertyForm({ user }: { user: User | null }) {
               <div className="relative">
                 <input
                   type="number"
-                  {...register('landArea', { required: true, min: 0 })}
-                  className="w-full rounded-lg border-gray-300 border p-2.5 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                  {...register('landArea')}
+                  className={`w-full rounded-lg border p-2.5 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.landArea ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 <span className="absolute right-3 top-2.5 text-gray-500 text-sm">m²</span>
               </div>
+              {errors.landArea && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.landArea.message}</p>}
             </div>
 
             {/* Garage */}
@@ -217,9 +254,10 @@ export default function PropertyForm({ user }: { user: User | null }) {
               </label>
               <input
                 type="number"
-                {...register('bedrooms', { required: true, min: 0 })}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                {...register('bedrooms')}
+                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.bedrooms ? 'border-red-500' : 'border-gray-300'}`}
               />
+              {errors.bedrooms && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.bedrooms.message}</p>}
             </div>
 
             {/* Bathrooms */}
@@ -230,12 +268,13 @@ export default function PropertyForm({ user }: { user: User | null }) {
               </label>
               <input
                 type="number"
-                {...register('bathrooms', { required: true, min: 0 })}
-                className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                {...register('bathrooms')}
+                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.bathrooms ? 'border-red-500' : 'border-gray-300'}`}
               />
+              {errors.bathrooms && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.bathrooms.message}</p>}
             </div>
           </div>
-          </>
+            </>
           )}
 
           <div className="border-t border-gray-100 pt-6">
@@ -250,10 +289,11 @@ export default function PropertyForm({ user }: { user: User | null }) {
                         <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                         <input
                             type="number"
-                            {...register('purchasePrice', { required: true, min: 1 })}
-                            className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900"
+                            {...register('purchasePrice')}
+                            className={`w-full rounded-lg border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900 ${errors.purchasePrice ? 'border-red-500' : 'border-gray-300'}`}
                         />
                     </div>
+                    {errors.purchasePrice && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.purchasePrice.message}</p>}
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Alquiler Mensual Estimado</label>
@@ -261,10 +301,11 @@ export default function PropertyForm({ user }: { user: User | null }) {
                         <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                         <input
                             type="number"
-                            {...register('estimatedRent', { required: true, min: 1 })}
-                            className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900"
+                            {...register('estimatedRent')}
+                            className={`w-full rounded-lg border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900 ${errors.estimatedRent ? 'border-red-500' : 'border-gray-300'}`}
                         />
                     </div>
+                    {errors.estimatedRent && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.estimatedRent.message}</p>}
                 </div>
             </div>
 
@@ -302,7 +343,7 @@ export default function PropertyForm({ user }: { user: User | null }) {
                             <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                             <input
                                 type="number"
-                                {...register('ibi', { min: 0 })}
+                                {...register('ibi')}
                                 className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
@@ -317,7 +358,7 @@ export default function PropertyForm({ user }: { user: User | null }) {
                              <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                             <input
                                 type="number"
-                                {...register('community', { min: 0 })}
+                                {...register('community')}
                                 className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
@@ -332,7 +373,7 @@ export default function PropertyForm({ user }: { user: User | null }) {
                              <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                             <input
                                 type="number"
-                                {...register('insurance', { min: 0 })}
+                                {...register('insurance')}
                                 className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
@@ -346,7 +387,7 @@ export default function PropertyForm({ user }: { user: User | null }) {
                         <input
                             type="number"
                             step="0.1"
-                            {...register('vacancyMonths', { min: 0, max: 12 })}
+                            {...register('vacancyMonths')}
                             className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                         />
                     </div>

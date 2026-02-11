@@ -23,6 +23,12 @@ This project uses a specialized agentic workflow. For every task, the **Orchestr
 5. **English Standard:** All code, file names, folder names, commit messages, and variable names MUST be in English. Spanish is ONLY allowed for user-facing strings (UI text).
 6. **Security:** RLS must be enabled on all tables. Never use `service_role` in the frontend or standard server actions.
 
+## 📁 Naming Conventions
+- **Folders:** always-kebab-case (English), e.g., `/my-properties`, `/user-profile`.
+- **Files:** PascalCase for Components (`UserProfile.tsx`), camelCase for utilities (`formatDate.ts`), kebab-case for assets (`hero-image.png`).
+- **Variables/Functions:** camelCase (English), e.g., `calculateProfitability`, `isValid`.
+- **Commits:** Conventional Commits (English), e.g., `feat(auth): add google provider`.
+
 ## 🔄 Execution Workflow
 1. **Discovery:** The Orchestrator summons the PM and Copywriter to define the plan and copy.
 2. **Design:** UX/UI and Database Analyst define the interface and data contract.

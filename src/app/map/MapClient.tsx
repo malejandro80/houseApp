@@ -20,7 +20,7 @@ type Property = {
   rent_price: number;
 };
 
-export default function MapPage() {
+export default function MapClient() {
   const supabase = createClient();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,29 +59,17 @@ export default function MapPage() {
   }, [supabase]);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm z-10 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </Link>
-            <h1 className="text-xl font-bold flex items-center gap-2 text-gray-800">
-              <MapIcon className="w-5 h-5 text-blue-600" />
-              Mapa de Propiedades
-            </h1>
-          </div>
-          <div className="text-sm text-gray-500">
-            {properties.length} propiedades encontradas
-          </div>
-        </div>
-      </header>
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 relative">
+      {/* Property Count Overlay */}
+      <div className="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur-sm shadow-md rounded-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+        {properties.length} propiedades encontradas
+      </div>
 
       {/* Map Container */}
-      <div className="flex-1 relative">
+      <div className="flex-1 w-full h-full relative isolate">
         {loading ? (
-             <div className="h-full w-full flex items-center justify-center">
+             <div className="h-full w-full flex items-center justify-center bg-gray-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
              </div>
         ) : (

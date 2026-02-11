@@ -1,11 +1,14 @@
 # Project Context & State
 
 ## 📊 Current Status
-**Version:** 0.2.5-beta
+**Version:** 0.2.7-beta
 **Last Updated:** 2026-02-10
 
 ## 🚀 Implemented Features
-- **Agent Protocol**: Enforced **ENGLISH ONLY** for code, files, and variables. (Spanish reserved for Copywriter/UI).
+- **Refactor**: Renamed folders `mapa` -> `map` and `mis-propiedades` -> `my-properties` to comply with English conventions.
+- **New Feature**: "My Properties" view (`/my-properties`) listing saved properties.
+- **Form Upgrade**: Added optional `Title` and `Contact Phone` fields.
+- **Agent Protocol**: Enforced **ENGLISH ONLY** for code, files, and variables.
 - **Map UX**: Added automatic User Geolocation and centering (`flyTo`) in `LocationPicker`.
 - **Database Mod**: Added 1:N relation (`datahouse` -> `users`) and updated RLS Policies.
 - **Backend Logic**: Updated `PropertyForm` to save `user_id` on new entries.
