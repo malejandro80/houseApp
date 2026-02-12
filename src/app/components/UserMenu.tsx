@@ -21,6 +21,7 @@ export default function UserMenu({ user }: { user: User | null }) {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    router.push('/');
     router.refresh();
   };
 

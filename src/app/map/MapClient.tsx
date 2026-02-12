@@ -2,24 +2,20 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { ArrowLeft, Map as MapIcon } from 'lucide-react';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-type Property = {
-  id: number;
+export type Property = {
+  id: string;
+  title: string;
   type: string;
   address: string;
   lat: number;
   lon: number;
-  m2: number;
-  rooms: number;
-  bathrooms: number;
-  has_garage: boolean;
   sale_price: number;
   rent_price: number;
   cover_image?: string | null;
-  images?: string[];
+  area_total: number;
+  metadata: any; 
 };
 
 export default function MapClient() {
@@ -40,15 +36,15 @@ export default function MapClient() {
     async function fetchProperties() {
       try {
         const { data, error } = await supabase
-          .from('datahouse')
+          .from('properties')
           .select('*')
-          .not('lat', 'is', null) // Only fetch properties with coordinates
+          .not('lat', 'is', null)
           .not('lon', 'is', null);
 
         if (error) {
           console.error('Error fetching properties:', error);
         } else {
-          setProperties(data || []);
+          setProperties(data as any || []);
         }
       } catch (err) {
         console.error('Unexpected error:', err);
@@ -75,7 +71,7 @@ export default function MapClient() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
              </div>
         ) : (
-             <PropertiesMap properties={properties} />
+             <PropertiesMap properties={properties as any} /> 
         )}
       </div>
     </div>

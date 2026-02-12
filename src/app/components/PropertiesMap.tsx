@@ -10,7 +10,7 @@ import { getUserZones, createZone, deleteZone, Zone } from '@/app/actions/zone-a
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Property = {
-  id: number;
+  id: string; // Changed to string for UUID
   title?: string | null;
   type: string;
   address: string;
@@ -21,20 +21,14 @@ type Property = {
   cover_image?: string | null;
 };
 
-// Custom Marker Function
-const createCustomMarker = (color: string) => {
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 drop-shadow-md filter">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-    <circle cx="12" cy="10" r="3" fill="white"></circle>
-  </svg>`;
-  
+// Custom Colored Marker Function
+const createColoredMarker = (color: string) => {
   return L.divIcon({
-    className: 'custom-marker',
-    html: svg,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40],
+    className: 'custom-colored-marker',
+    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: transform 0.2s;"></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
   });
 };
 
@@ -162,8 +156,8 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         
         <MapController onMapClick={handleMapClick} />
@@ -181,7 +175,7 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
             <Marker 
               key={property.id} 
               position={[property.lat, property.lon]}
-              icon={createCustomMarker(markerColor)}
+              icon={createColoredMarker(markerColor)}
             >
               <Popup className="custom-popup" closeButton={false}>
                  <div className="p-0 min-w-[240px] max-w-[260px] font-sans pb-3">

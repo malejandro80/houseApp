@@ -34,14 +34,17 @@ export async function getZoneStats(
   // providing a seamless "it just works" experience without complex migrations.
   
   const { data: allProperties } = await supabase
-    .from('datahouse')
-    .select('id, sale_price, m2, lat, lon');
+    .from('properties')
+    .select('id, sale_price, area_total, lat, lon');
 
   if (!allProperties) return { averagePrice: 0, averagePriceM2: 0, count: 0, minPrice: 0, maxPrice: 0 };
 
-  const propertiesInZone = allProperties.filter((p) => {
+  const propertiesInZone = allProperties.filter((p: any) => {
     if (p.id === excludeId) return false;
-    if (!p.lat || !p.lon || !p.sale_price || !p.m2) return false;
+    // Map area_total to expected field or use directly
+    const m2 = p.area_total || 0;
+    
+    if (!p.lat || !p.lon || !p.sale_price || !m2) return false;
 
     const distance = getDistanceFromLatLonInKm(lat, lon, p.lat, p.lon);
     return distance <= radiusKm;
@@ -51,8 +54,8 @@ export async function getZoneStats(
     return { averagePrice: 0, averagePriceM2: 0, count: 0, minPrice: 0, maxPrice: 0 };
   }
 
-  const prices = propertiesInZone.map(p => p.sale_price);
-  const m2Prices = propertiesInZone.map(p => p.sale_price / p.m2);
+  const prices = propertiesInZone.map((p: any) => p.sale_price);
+  const m2Prices = propertiesInZone.map((p: any) => p.sale_price / (p.area_total || 1));
 
   const total = prices.reduce((acc, curr) => acc + curr, 0);
   const totalM2 = m2Prices.reduce((acc, curr) => acc + curr, 0);

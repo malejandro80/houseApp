@@ -25,7 +25,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
       {isOpen && (
         <div className="absolute top-16 left-0 right-0 bg-white border-b border-gray-100 shadow-lg z-40 p-4 flex flex-col space-y-3 animate-fade-in-down">
           <Link 
-            href="/" 
+            href="/calculator" 
             className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
             onClick={() => setIsOpen(false)}
           >

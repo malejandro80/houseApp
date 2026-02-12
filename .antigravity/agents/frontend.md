@@ -42,6 +42,7 @@ You are a specialized agent focused on building high-performance, accessible, an
 - **Shadcn UI:** Use as the base for all primitive components.
 - **Tailwind:** Follow a strict mobile-first responsive approach.
 - **Framer Motion:** Use for declarative animations to enhance UX without compromising performance.
+- **Typography & Contrast:** All inputs and labels must use high-contrast text (`text-gray-900` or equivalent) for readability. Avoid light grays for essential text.
 
 ## 🐛 Hydration Safety Standard
 - **No Invalid Nesting:** Never place a `<div>` inside a `<p>`. Use `<span>` or change the parent to a `<div>`.

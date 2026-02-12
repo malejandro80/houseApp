@@ -1,626 +1,478 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import dynamic from 'next/dynamic';
-import { Building2, MapPin, BedDouble, Bath, Car, DollarSign, Calculator, AlertCircle, Upload, X, Star, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useState, useMemo, Dispatch, SetStateAction } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import FinancialDashboard from './FinancialDashboard';
-import Tooltip from './Tooltip';
-import { usePropertyProfitability } from '../hooks/usePropertyProfitability';
+import { 
+  Building2, MapPin, DollarSign, AlertTriangle, CheckCircle, 
+  ArrowRight, ArrowLeft, Save, Upload, X, Loader2, Home, Briefcase, Warehouse, LandPlot 
+} from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { propertyFormSchema, PropertyFormData } from '@/lib/schemas/propertySchema';
+import Image from 'next/image';
+import NumberInput from './NumberInput';
+import { useRouter } from 'next/navigation';
 
-// Define Zod Schema
-const propertySchema = z.object({
-  title: z.string().optional(),
-  contactPhone: z.string().optional(),
-  propertyType: z.string().min(1, 'Selecciona un tipo de propiedad'),
-  location: z.string().min(3, 'La ubicación es requerida (mín. 3 caracteres)'),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  landArea: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
-  bedrooms: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
-  bathrooms: z.coerce.number().min(0, 'Debe ser mayor o igual a 0'),
-  hasGarage: z.boolean().optional(),
-  purchasePrice: z.coerce.number().min(1, 'El precio debe ser mayor a 0'),
-  estimatedRent: z.coerce.number().min(1, 'El alquiler debe ser mayor a 0'),
-  ibi: z.coerce.number().min(0).default(0),
-  community: z.coerce.number().min(0).default(0),
-  insurance: z.coerce.number().min(0).default(0),
-  vacancyMonths: z.coerce.number().min(0).max(12, 'Máximo 12 meses').default(0),
-});
-
-type PropertyFormData = z.infer<typeof propertySchema>;
-
-export default function PropertyForm({ user }: { user: User | null }) {
+export default function PropertyForm({ user, step, setStep }: { user: User | null, step: number, setStep: Dispatch<SetStateAction<number>> }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  
   const supabase = createClient();
-  const { 
-    register, 
-    handleSubmit, 
-    reset, 
-    setValue, 
-    formState: { errors } 
-  } = useForm({
-    resolver: zodResolver(propertySchema),
+  const router = useRouter();
+  
+  const { register, handleSubmit, watch, setValue, control, formState: { errors }, reset, trigger } = useForm<PropertyFormData>({
+    resolver: zodResolver(propertyFormSchema) as any,
     defaultValues: {
-        ibi: 0,
-        community: 0,
-        insurance: 0,
-        vacancyMonths: 0,
-        hasGarage: false
+      type: 'house',
+      legalStatus: 'deed_ready',
+      salePrice: undefined,
+      rentPrice: undefined,
+      areaTotal: undefined,
+      areaBuilt: undefined,
+      age: undefined,
+      stratum: undefined,
+      rooms: undefined,
+      bathrooms: undefined,
+      parking: undefined,
+      frontage: undefined,
+      taxDebt: undefined,
+      riskZone: false,
+      roadAffectation: false,
+      heritage: false
     }
   });
 
-  const { result, calculateProfitability, resetResult } = usePropertyProfitability();
-  const [isExpertMode, setIsExpertMode] = useState(false);
-  
-  // Image handling state
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [coverIndex, setCoverIndex] = useState<number>(0);
-  const [isUploading, setIsUploading] = useState(false);
+  const propertyType = watch('type');
+  const salePrice = watch('salePrice');
+  const rentPrice = watch('rentPrice');
+
+  // Calculate Gross Yield
+  const grossYield = useMemo(() => {
+    if (!salePrice || !rentPrice) return 0;
+    return ((rentPrice * 12) / salePrice) * 100;
+  }, [salePrice, rentPrice]);
+
+  const LocationPicker = useMemo(() => dynamic(
+    () => import('./LocationPicker'),
+    { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-lg" /> }
+  ), []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
     const newFiles = Array.from(files);
     
-    // Validate total images
+    // Simple limit check
     if (selectedImages.length + newFiles.length > 5) {
-      alert('Máximo 5 imágenes permitidas');
-      return;
+        alert('Máximo 5 imágenes');
+        return;
     }
 
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-    
-    setSelectedImages(prev => [...prev, ...newFiles]);
-    setPreviewUrls(prev => [...prev, ...newPreviews]);
+    setSelectedImages([...selectedImages, ...newFiles]);
+    setPreviewUrls([...previewUrls, ...newPreviews]);
   };
 
-  const removeImage = (index: number) => {
-    const newImages = [...selectedImages];
-    const newPreviews = [...previewUrls];
-    
-    // Revoke object URL to avoid memory leaks
-    URL.revokeObjectURL(newPreviews[index]);
-    
-    newImages.splice(index, 1);
-    newPreviews.splice(index, 1);
-    
-    setSelectedImages(newImages);
-    setPreviewUrls(newPreviews);
-    
-    // Adjust cover index if needed
-    if (index === coverIndex) {
-      setCoverIndex(0);
-    } else if (index < coverIndex) {
-      setCoverIndex(prev => prev - 1);
-    }
-  };
-
-  const setCover = (index: number) => {
-    setCoverIndex(index);
-  };
-
-  // Dynamically import LocationPicker to avoid SSR issues with Leaflet
-  const LocationPicker = useMemo(() => dynamic(
-    () => import('./LocationPicker'),
-    { 
-      loading: () => <p className="p-4 text-center text-gray-500">Cargando mapa...</p>,
-      ssr: false 
-    }
-  ), []);
-
-  const onLocationSelect = (lat: number, lng: number) => {
-    setValue('latitude', lat);
-    setValue('longitude', lng);
-  };
+  // State for step transition buffering
+  const [isValidating, setIsValidating] = useState(false);
 
   const onSubmit = async (data: PropertyFormData) => {
-    calculateProfitability({
-      purchasePrice: Number(data.purchasePrice),
-      estimatedRent: Number(data.estimatedRent),
-      expenses: {
-        ibi: Number(data.ibi),
-        community: Number(data.community),
-        insurance: Number(data.insurance),
-        vacancyMonths: Number(data.vacancyMonths),
-      }
-    });
+    if (step < 3) return;
 
+    if (!user) {
+        alert('Debes iniciar sesión');
+        return;
+    }
+    
     setIsUploading(true);
     try {
-      if (user) {
-        // Upload images first
+        // 1. Upload Images
         const uploadedUrls: string[] = [];
-        
         for (const file of selectedImages) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-          const filePath = `${user.id}/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('property-images')
-            .upload(filePath, file);
-
-          if (uploadError) {
-            console.error('Error uploading image:', uploadError);
-            continue;
-          }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('property-images')
-            .getPublicUrl(filePath);
-
-          uploadedUrls.push(publicUrl);
-        }
-
-        // Determine cover image
-        let coverImageUrl = null;
-        if (uploadedUrls.length > 0) {
-            // If cover index is valid, use it. Otherwise use first image.
-            const coverIdx = coverIndex < uploadedUrls.length ? coverIndex : 0;
-            coverImageUrl = uploadedUrls[coverIdx];
-        }
-
-        const dataToSave =  {
-              type: data.propertyType,
-              address: data.location,
-              lat: data.latitude,
-              lon: data.longitude,
-              m2: Number(data.landArea),
-              rooms: Number(data.bedrooms),
-              bathrooms: Number(data.bathrooms),
-              has_garage: data.hasGarage || false,
-              sale_price: Number(data.purchasePrice),
-              rent_price: Number(data.estimatedRent),
-              title: data.title || null,
-              contact_phone: data.contactPhone || null,
-              user_id: user.id, // Associate property with logged-in user
-              images: uploadedUrls,
-              cover_image: coverImageUrl
+            const fileName = `${user.id}/${Date.now()}_${file.name}`;
+            const { error: uploadError } = await supabase.storage
+                .from('property-images')
+                .upload(fileName, file);
+            
+            if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                    .from('property-images')
+                    .getPublicUrl(fileName);
+                uploadedUrls.push(publicUrl);
             }
-       
-        const { error } = await supabase
-          .from('datahouse')
-          .insert([dataToSave]);
-
-        if (error) {
-          console.error('Error saving data to Supabase:', error);
-          alert('Error al guardar la propiedad. Por favor intenta de nuevo.');
-        } else {
-          console.log('Data saved successfully to Supabase');
-          // Reset form and images
-          reset();
-          setSelectedImages([]);
-          setPreviewUrls([]);
-          setCoverIndex(0);
-          alert('Propiedad guardada exitosamente!');
         }
-      }
-    } catch (err) {
-      console.error('Unexpected error saving data:', err);
-      alert('Ocurrió un error inesperado.');
+
+        // 2. Insert into Properties Table
+        const { error } = await supabase.from('properties').insert({
+            user_id: user.id,
+            title: data.title,
+            type: data.type,
+            sale_price: data.salePrice,
+            rent_price: data.rentPrice,
+            area_total: data.areaTotal,
+            area_built: data.areaBuilt,
+            address: data.address,
+            neighborhood: data.neighborhood,
+            lat: data.latitude,
+            lon: data.longitude,
+            age: data.age,
+            stratum: data.stratum,
+            
+            // Metadata
+            metadata: {
+                rooms: data.rooms,
+                bathrooms: data.bathrooms,
+                parking: data.parking,
+                amenities: data.amenities,
+                land_use: data.landUse,
+                topography: data.topography,
+                frontage: data.frontage,
+                foot_traffic: data.footTraffic,
+                floor_resistance: data.floorResistance,
+                ceiling_height: data.ceilingHeight,
+                loading_docks: data.loadingDocks,
+                power: data.power
+            },
+
+            // Risk
+            legal_status: data.legalStatus,
+            risk_factors: {
+                risk_zone: data.riskZone,
+                road_affectation: data.roadAffectation,
+                tax_debt: data.taxDebt,
+                heritage: data.heritage
+            },
+            
+            images: uploadedUrls,
+            cover_image: uploadedUrls[0] || null
+        });
+
+        if (error) throw error;
+
+        // Redirect to list
+        router.push('/my-properties');
+        reset();
+        setStep(1);
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar la propiedad');
     } finally {
-      setIsUploading(false);
+        setIsUploading(false);
     }
   };
 
-  const handleReset = () => {
-    reset();
-    resetResult();
-    setSelectedImages([]);
-    setPreviewUrls([]);
-    setCoverIndex(0);
+  const nextStep = async () => {
+    if (isValidating) return;
+    setIsValidating(true);
+    
+    let fields: (keyof PropertyFormData)[] = [];
+    if (step === 1) {
+        fields = ['title', 'salePrice', 'rentPrice', 'address'];
+    } else if (step === 2) {
+        fields = ['areaTotal', 'areaBuilt', 'age', 'stratum'];
+    }
+
+    const isValid = await trigger(fields);
+    
+    // Add small delay to prevent double-click accidental submission of next step
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    if (isValid) {
+        setStep(s => Math.min(s + 1, 3));
+    }
+    setIsValidating(false);
+  };
+
+  const prevStep = () => setStep(s => Math.max(s - 1, 1));
+
+  const variants = {
+    enter: { x: 20, opacity: 0 },
+    center: { x: 0, opacity: 1 },
+    exit: { x: -20, opacity: 0 }
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 sm:p-6 text-white">
-        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Calculator className="w-5 h-5 sm:w-6 sm:h-6" />
-          Estimadora de Inversiones
-        </h2>
-        <p className="text-blue-100 mt-1">Descubre si esta propiedad hará crecer tu dinero.</p>
-      </div>
-
-      <div className="p-4 sm:p-8">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
-          
-          {user && (
-            <>
-            <div className="space-y-4 sm:space-y-6 mb-6 pb-6 border-b border-gray-100">
-               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                 Información Básica
-               </h3>
-               
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                {/* Title (Optional) */}
-                <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">Título (Opcional)</label>
-                 <input
-                   type="text"
-                   {...register('title')}
-                   placeholder="Ej. Casa moderna en centro histórico"
-                   className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
-                 />
-               </div>
-
-                {/* Contact Phone (Optional) */}
-                <div className="space-y-2">
-                 <label className="text-sm font-medium text-gray-700">Teléfono de Contacto (Opcional)</label>
-                 <input
-                   type="tel"
-                   {...register('contactPhone')}
-                   placeholder="+52 555 123 4567"
-                   className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
-                 />
-               </div>
-            </div>
-          </div>
-          
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            {/* Property Type */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <Building2 className="w-4 h-4 text-gray-500" />
-                Tipo de Propiedad
-              </label>
-              <select
-                {...register('propertyType')}
-                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.propertyType ? 'border-red-500' : 'border-gray-300'}`}
-              >
-                <option value="house">Casa</option>
-                <option value="apartment">Apartamento</option>
-                <option value="commercial">Local Comercial</option>
-                <option value="land">Terreno</option>
-              </select>
-              {errors.propertyType && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.propertyType.message}</p>}
-            </div>
-
-             {/* Location */}
-             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <MapPin className="w-4 h-4 text-gray-500" />
-                Ubicación
-              </label>
-              <input
-                type="text"
-                {...register('location')}
-                placeholder="Ej. Centro de la ciudad"
-                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.location && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.location.message}</p>}
-            </div>
-          </div>
-
-          {/* Image Upload Section */}
-          <div className="space-y-4 pt-4 border-t border-gray-100">
-             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                 <ImageIcon className="w-5 h-5 text-blue-600" />
-                 Imágenes de la Propiedad
-             </h3>
-             <p className="text-sm text-gray-500">
-                 Sube hasta 5 fotos. La imagen marcada con estrella será la portada.
-             </p>
-             
-             {/* Upload Area */}
-             <div className="flex flex-col gap-4">
-                 {selectedImages.length < 5 && (
-                    <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300 transition-colors">
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                                <p className="text-sm text-gray-500 font-semibold">Haz clic para subir imágenes</p>
-                                <p className="text-xs text-gray-500">PNG, JPG (Máx. 5)</p>
-                            </div>
-                            <input 
-                                type="file" 
-                                className="hidden" 
-                                multiple 
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                disabled={selectedImages.length >= 5}
-                            />
-                        </label>
-                    </div>
-                 )}
-
-                 {/* Previews Grid */}
-                 {previewUrls.length > 0 && (
-                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                         <AnimatePresence>
-                         {previewUrls.map((url, index) => (
-                             <motion.div 
-                                key={url} // Use URL as key
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                layout
-                                className={`relative group aspect-square rounded-lg overflow-hidden border-2 transition-all ${index === coverIndex ? 'border-yellow-400 ring-2 ring-yellow-400 ring-offset-2' : 'border-gray-200'}`}
-                             >
-                                 <Image 
-                                     src={url} 
-                                     alt={`Preview ${index}`} 
-                                     fill 
-                                     className="object-cover"
-                                 />
-                                 
-                                 {/* Overlay Actions */}
-                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                                     <div className="flex justify-end">
-                                         <button
-                                             type="button"
-                                             onClick={() => removeImage(index)}
-                                             className="p-1 bg-white/90 rounded-full text-red-500 hover:bg-white transition-colors"
-                                             title="Eliminar"
-                                         >
-                                             <X size={14} />
-                                         </button>
-                                     </div>
-                                     <div className="flex justify-center">
-                                         <button
-                                             type="button"
-                                             onClick={() => setCover(index)}
-                                             className={`p-1.5 rounded-full backdrop-blur-sm transition-all ${index === coverIndex ? 'bg-yellow-400 text-white' : 'bg-white/30 text-white hover:bg-yellow-400'}`}
-                                             title={index === coverIndex ? "Portada actual" : "Establecer como portada"}
-                                         >
-                                             <Star size={16} fill={index === coverIndex ? "currentColor" : "none"} />
-                                         </button>
-                                     </div>
-                                 </div>
-                                 
-                                 {index === coverIndex && (
-                                     <div className="absolute top-2 left-2 bg-yellow-400 text-xs font-bold px-2 py-0.5 rounded-md shadow-sm text-white">
-                                         PORTADA
-                                     </div>
-                                 )}
-                             </motion.div>
-                         ))}
-                         </AnimatePresence>
-                     </div>
-                 )}
-             </div>
-          </div>
-
-          {/* Map Section */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-              <MapPin className="w-4 h-4 text-gray-500" />
-              Seleccionar Ubicación en Mapa
-            </label>
-            <div className="h-[300px] w-full border border-gray-300 rounded-lg overflow-hidden relative z-0">
-                <LocationPicker onLocationSelect={onLocationSelect} />
-            </div>
-            {/* Hidden Inputs for Zod Registration */}
-            <input type="hidden" {...register('latitude')} />
-            <input type="hidden" {...register('longitude')} />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-             {/* Land Area */}
-             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Superficie Terreno</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  {...register('landArea')}
-                  className={`w-full rounded-lg border p-2.5 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.landArea ? 'border-red-500' : 'border-gray-300'}`}
-                />
-                <span className="absolute right-3 top-2.5 text-gray-500 text-sm">m²</span>
-              </div>
-              {errors.landArea && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.landArea.message}</p>}
-            </div>
-
-            {/* Garage */}
-            <div className="flex items-center space-x-3 pt-8">
-                <input
-                    type="checkbox"
-                    id="hasGarage"
-                    {...register('hasGarage')}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
-                />
-                <label htmlFor="hasGarage" className="text-sm font-medium text-gray-700 flex items-center gap-1 select-none cursor-pointer">
-                    <Car className="w-4 h-4 text-gray-500" />
-                    Tiene Garage
-                </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            {/* Bedrooms */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <BedDouble className="w-4 h-4 text-gray-500" />
-                Habitaciones
-              </label>
-              <input
-                type="number"
-                {...register('bedrooms')}
-                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.bedrooms ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.bedrooms && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.bedrooms.message}</p>}
-            </div>
-
-            {/* Bathrooms */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <Bath className="w-4 h-4 text-gray-500" />
-                Baños
-              </label>
-              <input
-                type="number"
-                {...register('bathrooms')}
-                className={`w-full rounded-lg border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 ${errors.bathrooms ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.bathrooms && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.bathrooms.message}</p>}
-            </div>
-          </div>
-            </>
-          )}
-
-          <div className="border-t border-gray-100 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-600" />
-                Datos Financieros
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Precio de Compra</label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                        <input
-                            type="number"
-                            {...register('purchasePrice')}
-                            className={`w-full rounded-lg border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900 ${errors.purchasePrice ? 'border-red-500' : 'border-gray-300'}`}
-                        />
-                    </div>
-                    {errors.purchasePrice && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.purchasePrice.message}</p>}
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Alquiler Mensual Estimado</label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                        <input
-                            type="number"
-                            {...register('estimatedRent')}
-                            className={`w-full rounded-lg border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50 text-gray-900 ${errors.estimatedRent ? 'border-red-500' : 'border-gray-300'}`}
-                        />
-                    </div>
-                    {errors.estimatedRent && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.estimatedRent.message}</p>}
-                </div>
-            </div>
-
-          </div>
-
-            {/* Expert Mode Toggle */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-6">
-               <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">Modo Experto</span>
-                  <Tooltip text="Desglosa gastos detallados (IBI, comunidad, seguros) para un cálculo de retorno neto preciso." />
-               </div>
-               <button
-                  type="button"
-                  onClick={() => setIsExpertMode(!isExpertMode)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${isExpertMode ? 'bg-indigo-600' : 'bg-gray-200'}`}
-               >
-                  <span
-                    className={`${
-                      isExpertMode ? 'translate-x-6' : 'translate-x-1'
-                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                  />
-               </button>
-            </div>
-
-            {/* Expert Inputs */}
-            <AnimatePresence>
-            {isExpertMode && (
-                <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-gray-50 p-4 rounded-lg border border-gray-100 mt-4 overflow-hidden"
+    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+      
+      <form onSubmit={handleSubmit(onSubmit, (e) => console.log('Validation Errors:', e))} className="p-6">
+        <AnimatePresence mode="wait">
+            
+            {/* STEP 1: BASIC INFO */}
+            {step === 1 && (
+                <motion.div
+                    key="step1"
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    className="space-y-6"
                 >
-                    
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                            IBI / Predial (Anual)
-                            <Tooltip text="Impuesto anual obligatorio. Ej: $200-$800/año." />
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                            <input
-                                type="number"
-                                {...register('ibi')}
-                                className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Título del Anuncio</label>
+                            <input {...register('title')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Casa en El Poblado" />
+                            {errors.title && <p className="text-red-500 text-xs">{errors.title.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Tipo de Inmueble</label>
+                            <select {...register('type')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="house">Casa</option>
+                                <option value="apartment">Apartamento</option>
+                                <option value="commercial">Local Comercial</option>
+                                <option value="land">Lote / Terreno</option>
+                                <option value="warehouse">Bodega / Galpón</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Precio de Venta ($)</label>
+                            <Controller
+                                name="salePrice"
+                                control={control}
+                                render={({ field }) => (
+                                    <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
+                                )}
+                            />
+                             {errors.salePrice && <p className="text-red-500 text-xs">{errors.salePrice.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Renta Estimada Mensual ($)</label>
+                            <Controller
+                                name="rentPrice"
+                                control={control}
+                                render={({ field }) => (
+                                    <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
+                                )}
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                            Comunidad (Mensual)
-                            <Tooltip text="Cuota de mantenimiento. Ej: $50-$150/mes." />
-                        </label>
-                        <div className="relative">
-                             <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                            <input
-                                type="number"
-                                {...register('community')}
-                                className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                            />
+                    {/* Gross Yield Display */}
+                    {(grossYield > 0) && (
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-xl flex items-center justify-between">
+                            <div>
+                                <h4 className="font-bold text-green-800 text-sm">Yield Bruto Estimado</h4>
+                                <p className="text-xs text-green-600">Rentabilidad anual antes de gastos</p>
+                            </div>
+                            <span className="text-2xl font-extrabold text-green-700">{grossYield.toFixed(2)}%</span>
                         </div>
-                    </div>
+                    )}
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                            Seguro Hogar (Anual)
-                            <Tooltip text="Protección contra daños. Ej: $200-$400/año." />
-                        </label>
-                        <div className="relative">
-                             <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                            <input
-                                type="number"
-                                {...register('insurance')}
-                                className="w-full rounded-lg border-gray-300 border p-2.5 pl-7 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                            />
-                        </div>
+                        <label className="text-sm font-semibold text-gray-600">Dirección Exacta</label>
+                        <input {...register('address')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Calle 123 #45-67" />
+                        {errors.address && <p className="text-red-500 text-xs">{errors.address.message}</p>}
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                            Vacancia (Meses/Año)
-                            <Tooltip text="Meses sin inquilino. Ej: 1 mes/año es estándar." />
-                        </label>
-                        <input
-                            type="number"
-                            step="0.1"
-                            {...register('vacancyMonths')}
-                            className="w-full rounded-lg border-gray-300 border p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
+                    <div className="h-64 border rounded-lg overflow-hidden relative">
+                         <LocationPicker onLocationSelect={(lat, lng) => {
+                             setValue('latitude', lat);
+                             setValue('longitude', lng);
+                         }} />
+                         <input type="hidden" {...register('latitude')} />
+                         <input type="hidden" {...register('longitude')} />
                     </div>
-
                 </motion.div>
             )}
-            </AnimatePresence>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-full sm:w-1/3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg transition-colors order-2 sm:order-1"
-            >
-              Limpiar
-            </button>
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl order-1 sm:order-2"
-            >
-              {isUploading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Guardando...
-                </span>
-              ) : (
-                'Calcular y Guardar'
-              )}
-            </motion.button>
-          </div>
-        </form>
+            {/* STEP 2: DETAILS */}
+            {step === 2 && (
+                <motion.div
+                    key="step2"
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    className="space-y-6"
+                >
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Área Total (m²)</label>
+                            <Controller
+                                name="areaTotal"
+                                control={control}
+                                render={({ field }) => (
+                                    <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none" />
+                                )}
+                            />
+                            {errors.areaTotal && <p className="text-red-500 text-xs">{errors.areaTotal.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Área Construida (m²)</label>
+                            <Controller
+                                name="areaBuilt"
+                                control={control}
+                                render={({ field }) => (
+                                    <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none" />
+                                )}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Antigüedad (Años)</label>
+                            <Controller
+                                name="age"
+                                control={control}
+                                render={({ field }) => (
+                                    <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none" />
+                                )}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-600">Estrato (1-6)</label>
+                            <Controller
+                                name="stratum"
+                                control={control}
+                                render={({ field }) => (
+                                    <NumberInput {...field} placeholder="3" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none" min={1} max={6} />
+                                )}
+                            />
+                        </div>
+                    </div>
 
-        {result && (
-          <FinancialDashboard result={result} />
-        )}
-      </div>
+                    {/* Dynamic Fields based on Type */}
+                    {(propertyType === 'house' || propertyType === 'apartment') && (
+                        <div className="bg-gray-50 p-4 rounded-xl space-y-4 border border-gray-100">
+                            <h4 className="font-semibold text-gray-700 flex items-center gap-2"><Home size={16}/> Detalles Residenciales</h4>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-600">Habitaciones</label>
+                                    <Controller name="rooms" control={control} render={({ field }) => <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2" />} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-600">Baños</label>
+                                    <Controller name="bathrooms" control={control} render={({ field }) => <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2" />} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-600">Parqueaderos</label>
+                                    <Controller name="parking" control={control} render={({ field }) => <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2" />} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {propertyType === 'commercial' && (
+                        <div className="bg-gray-50 p-4 rounded-xl space-y-4 border border-gray-100">
+                             <h4 className="font-semibold text-gray-700 flex items-center gap-2"><Briefcase size={16}/> Comercial</h4>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-600">Frente (mts)</label>
+                                    <Controller name="frontage" control={control} render={({ field }) => <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2" />} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-600">Tráfico Peatonal</label>
+                                    <select {...register('footTraffic')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2">
+                                        <option value="high">Alto</option>
+                                        <option value="medium">Medio</option>
+                                        <option value="low">Bajo</option>
+                                    </select>
+                                </div>
+                             </div>
+                        </div>
+                    )}
+                    
+                    {/* Image Upload */}
+                    <div className="border-t pt-4">
+                         <h4 className="font-semibold text-gray-800 mb-2">Fotografías</h4>
+                         <div className="grid grid-cols-5 gap-2 mb-2">
+                             {previewUrls.map((url, i) => (
+                                 <div key={i} className="aspect-square relative rounded-lg overflow-hidden border">
+                                     <Image src={url} alt="preview" fill className="object-cover" />
+                                 </div>
+                             ))}
+                             {previewUrls.length < 5 && (
+                                 <label className="aspect-square flex items-center justify-center border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                                     <Upload className="text-gray-400" />
+                                     <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                 </label>
+                             )}
+                         </div>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* STEP 3: RISK */}
+            {step === 3 && (
+                <motion.div
+                    key="step3"
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    className="space-y-6"
+                >
+                    <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                         <h4 className="font-bold text-red-800 flex items-center gap-2"><AlertTriangle size={18}/> Matriz de Riesgo</h4>
+                         <p className="text-xs text-red-600 mt-1">Estos factores impactan directamente la valoración final.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-sm font-semibold text-gray-600 block mb-1">Estatus Jurídico</label>
+                            <select {...register('legalStatus')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="deed_ready">Escritura al Día (Sin Problemas)</option>
+                                <option value="possession">Posesión / Sin Escritura</option>
+                                <option value="legal_issue">En Proceso de Sucesión / Remate</option>
+                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" {...register('riskZone')} className="w-5 h-5 text-red-600 rounded" />
+                                <span className="text-sm font-medium text-gray-700">Zona de Alto Riesgo (Cerro, Inundación)</span>
+                            </label>
+                            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" {...register('roadAffectation')} className="w-5 h-5 text-red-600 rounded" />
+                                <span className="text-sm font-medium text-gray-700">Afectación Vial (Planes de ampliación)</span>
+                            </label>
+                            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" {...register('heritage')} className="w-5 h-5 text-blue-600 rounded" />
+                                <span className="text-sm font-medium text-gray-700">Patrimonio Arquitectónico (Limitaciones)</span>
+                            </label>
+                        </div>
+
+                        <div>
+                             <label className="text-sm font-semibold text-gray-600 block mb-1">Deuda Predial / Servicios ($)</label>
+                             <Controller
+                                name="taxDebt"
+                                control={control}
+                                render={({ field }) => (
+                                    <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none" />
+                                )}
+                            />
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
+        </AnimatePresence>
+
+        {/* CONTROLS */}
+        <div className="flex justify-between mt-8 pt-4 border-t">
+            {step > 1 ? (
+                <button type="button" onClick={prevStep} className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg flex items-center gap-2">
+                    <ArrowLeft size={16} /> Atrás
+                </button>
+            ) : <div />}
+            
+            {step < 3 ? (
+                <button type="button" onClick={nextStep} disabled={isValidating} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-lg disabled:opacity-50">
+                    {isValidating ? <Loader2 className="animate-spin" size={16}/> : <>Siguiente <ArrowRight size={16} /></>}
+                </button>
+            ) : (
+                <button type="submit" disabled={isUploading} className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-lg disabled:opacity-50">
+                    {isUploading ? <Loader2 className="animate-spin" /> : <Save size={16} />}
+                    Guardar Propiedad
+                </button>
+            )}
+        </div>
+      </form>
     </div>
   );
 }

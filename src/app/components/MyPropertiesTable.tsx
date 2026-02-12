@@ -29,7 +29,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
   useEffect(() => {
     const fetchProperties = async () => {
       const { data, error } = await supabase
-        .from('datahouse')
+        .from('properties')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
