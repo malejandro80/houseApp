@@ -22,6 +22,7 @@ This project uses a specialized agentic workflow. For every task, the **Orchestr
 4. **Performance:** Prioritize Server Components. Use `'use client'` strictly for interactivity or Web APIs. Wrap client components in `Suspense`.
 5. **English Standard:** All code, file names, folder names, commit messages, and variable names MUST be in English. Spanish is ONLY allowed for user-facing strings (UI text).
 6. **Security:** RLS must be enabled on all tables. Never use `service_role` in the frontend or standard server actions.
+7. **Dependency Management:** ALWAYS run `pnpm install` (or equivalent) to update the lockfile (`pnpm-lock.yaml`) whenever `package.json` is modified. This prevents `ERR_PNPM_OUTDATED_LOCKFILE` during Vercel deployment.
 
 ## 📁 Naming Conventions
 - **Folders:** always-kebab-case (English), e.g., `/my-properties`, `/user-profile`.
