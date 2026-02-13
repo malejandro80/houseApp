@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 export type Property = {
   id: string;
@@ -16,9 +17,12 @@ export type Property = {
   cover_image?: string | null;
   area_total: number;
   metadata: any; 
+  assigned_advisor?: {
+    full_name: string | null;
+  } | null;
 };
 
-export default function MapClient() {
+export default function MapClient({ user }: { user: User | null }) {
   const supabase = createClient();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,11 +39,28 @@ export default function MapClient() {
   useEffect(() => {
     async function fetchProperties() {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('properties')
-          .select('*')
+          .select(`
+            *,
+            assigned_advisor:assigned_advisor_id(full_name)
+          `)
           .not('lat', 'is', null)
           .not('lon', 'is', null);
+
+        // Filter logic:
+        // Public: is_listed = true
+        // Logged in: is_listed = true OR user_id = my_id
+        
+        if (user) {
+            // Logged in: is_listed (Public Sales) OR my properties (Investments, drafts)
+            query = query.or(`is_listed.eq.true,user_id.eq.${user.id}`);
+        } else {
+            // Public: Only listed properties (which are by definition 'sale')
+            query = query.eq('is_listed', true);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
           console.error('Error fetching properties:', error);
@@ -58,10 +79,12 @@ export default function MapClient() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 relative">
+      {/* Search/Filter Overlay could go here */}
+      
       {/* Property Count Overlay */}
       <div className="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur-sm shadow-md rounded-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-        {properties.length} propiedades encontradas
+        {properties.length} propiedades en venta
       </div>
 
       {/* Map Container */}
@@ -71,7 +94,7 @@ export default function MapClient() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
              </div>
         ) : (
-             <PropertiesMap properties={properties as any} /> 
+             <PropertiesMap properties={properties as any} user={user} /> 
         )}
       </div>
     </div>

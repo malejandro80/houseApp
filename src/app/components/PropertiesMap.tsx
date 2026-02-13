@@ -1,16 +1,18 @@
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { Building2, TrendingUp, MapPin, Layers, X, Radar, DollarSign, Loader2, Save, Trash2, History } from 'lucide-react';
+import { Building2, TrendingUp, MapPin, Layers, X, Radar, DollarSign, Loader2, Save, Trash2, History, UserCircle, Mail } from 'lucide-react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { getZoneStats, ZoneStats } from '@/app/actions/get-zone-stats';
 import { getUserZones, createZone, deleteZone, Zone } from '@/app/actions/zone-actions';
 import { motion, AnimatePresence } from 'framer-motion';
+import { User } from '@supabase/supabase-js';
+import { getAdvisorContact } from '@/app/actions/contact';
 
 type Property = {
-  id: string; // Changed to string for UUID
+  id: string; 
   title?: string | null;
   type: string;
   address: string;
@@ -19,6 +21,10 @@ type Property = {
   sale_price: number;
   rent_price: number;
   cover_image?: string | null;
+  assigned_advisor_id?: string | null; 
+  assigned_advisor?: {
+    full_name: string | null;
+  } | null;
 };
 
 // Custom Colored Marker Function
@@ -34,6 +40,7 @@ const createColoredMarker = (color: string) => {
 
 type PropertiesMapProps = {
   properties: Property[];
+  user?: User | null;
 };
 
 function MapController({ onMapClick }: { onMapClick: (center: L.LatLng) => void }) {
@@ -45,7 +52,7 @@ function MapController({ onMapClick }: { onMapClick: (center: L.LatLng) => void 
   return null;
 }
 
-export default function PropertiesMap({ properties }: PropertiesMapProps) {
+export default function PropertiesMap({ properties, user }: PropertiesMapProps) {
   // Center: Mexico City default or first property
   const defaultCenter: [number, number] = properties.length > 0
     ? [properties[0].lat, properties[0].lon]
@@ -67,11 +74,16 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
   const [loadingZones, setLoadingZones] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
   const [creatingZone, setCreatingZone] = useState(false);
+  
+  // Contact State
+  const [contactingId, setContactingId] = useState<string | null>(null);
 
-  // Load Zones on Mount
+  // Load Zones on Mount (Only if user logged in)
   useEffect(() => {
-    loadZones();
-  }, []);
+    if (user) {
+        loadZones();
+    }
+  }, [user]);
 
   const loadZones = async () => {
     setLoadingZones(true);
@@ -95,7 +107,6 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      // Use mapCenter
       const data = await getZoneStats(mapCenter.lat, mapCenter.lng, radius, 0); 
       setStats(data);
     } catch (error) {
@@ -133,8 +144,6 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
   const handleSelectZone = (zone: Zone) => {
     setMapCenter(new L.LatLng(zone.lat, zone.lon));
     setRadius(zone.radius);
-    // Optionally fetch live stats too? Or rely on history
-    // For now, let's just focus on the zone
   };
 
   const handleOpenAnalyzer = () => {
@@ -144,6 +153,28 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
   const handleMapClick = (latlng: L.LatLng) => {
       if (isAnalyzerOpen) {
           setMapCenter(latlng);
+      }
+  };
+  
+  const handleContactAdvisor = async (propertyId: string, advisorId: string | undefined | null) => {
+      if (!advisorId) {
+          alert('Esta propiedad no tiene un asesor asignado aún.');
+          return;
+      }
+      
+      setContactingId(propertyId);
+      try {
+          const contact = await getAdvisorContact(advisorId);
+          if (contact.email) {
+              window.location.href = `mailto:${contact.email}?subject=Interés en propiedad ${propertyId}&body=Hola, estoy interesado en recibir más información sobre esta propiedad.`;
+          } else {
+              alert('No se encontró información de contacto para este asesor.');
+          }
+      } catch (e) {
+          console.error(e);
+          alert('Error al contactar asesor.');
+      } finally {
+          setContactingId(null);
       }
   };
 
@@ -161,15 +192,22 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
         />
         
         <MapController onMapClick={handleMapClick} />
+        <LocateControl autoLocate={!user} />
 
         {/* Render Properties */}
         {properties.map((property) => {
           const { netReturn, health } = calculateProfitabilityForList(property.sale_price, property.rent_price);
           const healthStyle = getHealthLabel(health);
           
+          const isInvestment = (property as any).purpose === 'investment';
+
           let markerColor = '#ef4444'; 
-          if (health === 'safe') markerColor = '#16a34a'; 
-          else if (health === 'average') markerColor = '#ca8a04'; 
+          if (isInvestment) {
+              markerColor = '#3b82f6'; // Blue for Investment
+          } else {
+              if (health === 'safe') markerColor = '#16a34a'; 
+              else if (health === 'average') markerColor = '#ca8a04'; 
+          }
 
           return (
             <Marker 
@@ -193,7 +231,12 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                              <Building2 size={32} />
                         </div>
                     )}
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2 flex gap-1">
+                        {isInvestment && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 shadow-sm">
+                                Mi Análisis
+                            </span>
+                        )}
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${healthStyle.bg} ${healthStyle.color} ${healthStyle.borderColor}`}>
                             {healthStyle.text}
                         </span>
@@ -242,13 +285,47 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                         <span className="truncate leading-tight block w-full">{property.address}</span>
                     </div>
 
-                    {/* Action Button */}
-                    <a 
-                        href={`/my-properties/${property.id}`}
-                        className="block w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-center rounded-lg text-xs font-bold transition-colors shadow-sm"
-                    >
-                        Ver Detalles
-                    </a>
+                    {/* Contact / Detail Action - ONLY FOR SALES */}
+                    {!isInvestment && (
+                        user ? (
+                             <div className="mt-3 pt-2 border-t border-gray-100">
+                                 <p className="text-[10px] text-gray-500 mb-1 flex items-center gap-1">
+                                    <UserCircle size={10} />
+                                    Asesor: <span className="font-semibold text-gray-700">{property.assigned_advisor?.full_name?.split(' ')[0] || 'Asignado'}</span>
+                                 </p>
+                                 <button
+                                    onClick={() => handleContactAdvisor(property.id, property.assigned_advisor_id)}
+                                    disabled={contactingId === property.id}
+                                    className="w-full py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-1"
+                                 >
+                                    {contactingId === property.id ? <Loader2 className="animate-spin w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                                    Contactar Asesor
+                                 </button>
+                             </div>
+                        ) : (
+                            <div className="mt-3 pt-2 border-t border-gray-100">
+                                <p className="text-[10px] text-gray-500 mb-1 italic text-center">
+                                    Inicia sesión para contactar
+                                </p>
+                                <Link 
+                                    href="/login" 
+                                    className="block w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-center rounded text-xs font-bold transition-colors shadow-sm"
+                                >
+                                    Iniciar Sesión
+                                </Link>
+                            </div>
+                        )
+                    )}
+                    
+                    {/* Investment Notice */}
+                    {isInvestment && (
+                        <div className="mt-2 pt-2 border-t border-gray-100 text-center">
+                             <p className="text-[10px] text-blue-600 font-semibold bg-blue-50 py-1 rounded">
+                                 Solo visible para ti
+                             </p>
+                        </div>
+                    )}
+
                   </div>
                 </div>
               </Popup>
@@ -256,7 +333,7 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
           );
         })}
 
-        {/* Analysis Circle & Center Marker */}
+        {/* Analzyer Circles... (unchanged) */}
         {isAnalyzerOpen && (
             <>
              <Circle 
@@ -264,20 +341,18 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                 radius={radius * 1000} 
                 pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15, dashArray: '5, 10' }} 
             />
-            {/* Center point indicator */}
             <Circle 
                 center={mapCenter}
                 radius={10}
                 pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 1 }}
             />
-            {/* Render Saved Zones Markers if active tab is my zones? No, maybe clutter. Keep map clean. */}
             </>
         )}
       </MapContainer>
-
-      {/* Floating Action Button (Top-Left) */}
+      
+      {/* Floating Action Button (Top-Left) - Only for Logged In Users */}
       <AnimatePresence>
-      {!isAnalyzerOpen && (
+      {!isAnalyzerOpen && user && (
         <motion.button 
            initial={{ scale: 0, opacity: 0 }}
            animate={{ scale: 1, opacity: 1 }}
@@ -330,10 +405,10 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
             </div>
             
             <div className="p-4 overflow-y-auto">
-                
                 {activeTab === 'radar' ? (
                     <>
-                        <p className="text-xs text-gray-500 mb-4 bg-blue-50 p-2 rounded border border-blue-100">
+                        {/* Radar Content */}
+                         <p className="text-xs text-gray-500 mb-4 bg-blue-50 p-2 rounded border border-blue-100">
                             <span className="font-bold">Click en el mapa</span> para definir el centro del análisis.
                         </p>
 
@@ -358,24 +433,28 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                             </div>
                         </div>
 
-                        {/* Save Zone CTA */}
-                        <div className="mb-6 flex gap-2">
-                             <input 
-                                type="text"
-                                placeholder="Nombre para guardar zona..."
-                                value={newZoneName}
-                                onChange={(e) => setNewZoneName(e.target.value)}
-                                className="flex-1 text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                             />
-                             <button 
-                                onClick={handleCreateZone}
-                                disabled={creatingZone || !newZoneName.trim()}
-                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
-                             >
-                                {creatingZone ? <Loader2 className="animate-spin w-3 h-3" /> : <Save className="w-3 h-3" />}
-                                Guardar
-                             </button>
-                        </div>
+                         {/* Save Zone CTA - Only if logged in */}
+                         {user ? (
+                             <div className="mb-6 flex gap-2">
+                                <input 
+                                   type="text"
+                                   placeholder="Nombre para guardar zona..."
+                                   value={newZoneName}
+                                   onChange={(e) => setNewZoneName(e.target.value)}
+                                   className="flex-1 text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <button 
+                                   onClick={handleCreateZone}
+                                   disabled={creatingZone || !newZoneName.trim()}
+                                   className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                >
+                                   {creatingZone ? <Loader2 className="animate-spin w-3 h-3" /> : <Save className="w-3 h-3" />}
+                                   Guardar
+                                </button>
+                           </div>
+                         ) : (
+                             <p className="text-xs text-center text-gray-500 mb-6 italic">Inicia sesión para guardar zonas</p>
+                         )}
 
                         {/* Results */}
                         {loadingStats ? (
@@ -384,7 +463,7 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                                 <span className="text-xs">Calculando...</span>
                             </div>
                         ) : stats ? (
-                            <div className="space-y-4">
+                             <div className="space-y-4">
                                 {stats.count > 0 ? (
                                     <>
                                         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-center">
@@ -423,7 +502,12 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
                 ) : (
                     <div className="space-y-4">
                         {/* My Zones List */}
-                        {loadingZones ? (
+                         {!user ? (
+                            <div className="text-center py-8 text-gray-400">
+                                <p className="text-sm font-medium mb-1">Inicia sesión</p>
+                                <p className="text-xs">Para ver y gestionar tus zonas guardadas.</p>
+                            </div>
+                         ) : loadingZones ? (
                             <div className="flex justify-center py-8"><Loader2 className="animate-spin text-blue-500" /></div>
                         ) : zones.length > 0 ? (
                             zones.map(zone => (
@@ -499,7 +583,6 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
       )}
       </AnimatePresence>
 
-
       <style jsx global>{`
         .leaflet-popup-content-wrapper {
           padding: 0;
@@ -516,5 +599,36 @@ export default function PropertiesMap({ properties }: PropertiesMapProps) {
         }
       `}</style>
     </div>
+  );
+}
+
+function LocateControl({ autoLocate = false }: { autoLocate?: boolean }) {
+  const map = useMapEvents({
+    locationfound(e) {
+      map.flyTo(e.latlng, 15);
+      L.circle(e.latlng, { radius: e.accuracy / 2, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.2 }).addTo(map);
+      L.circleMarker(e.latlng, { radius: 6, color: 'white', fillColor: '#2563eb', fillOpacity: 1, weight: 2 }).addTo(map);
+    },
+    locationerror(e) {
+        // Only alert if manually triggered or if critical. For auto-locate, maybe silent fail or console warn is better to avoid annoying popups if denied previously.
+        console.warn('Location access denied or error.');
+        if (!autoLocate) alert('No pudimos acceder a tu ubicación. Por favor revisa los permisos.');
+    }
+  });
+
+  useEffect(() => {
+      if (autoLocate) {
+          map.locate({ setView: true, maxZoom: 14 });
+      }
+  }, [autoLocate, map]);
+
+  return (
+    <button 
+        onClick={() => map.locate()}
+        className="absolute bottom-20 right-4 z-[400] bg-white p-2 rounded-lg shadow-md border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center"
+        title="Mi Ubicación"
+    >
+        <MapPin className="w-5 h-5 text-blue-600" />
+    </button>
   );
 }

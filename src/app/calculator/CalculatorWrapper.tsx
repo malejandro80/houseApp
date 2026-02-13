@@ -4,10 +4,25 @@ import { useState } from 'react';
 import PropertyForm from "@/app/components/PropertyForm";
 import SuggestionsSlider from "@/app/components/SuggestionsSlider";
 import CalculatorStepper from "@/app/components/CalculatorStepper";
+import InitialChoice from "./InitialChoice";
 import { User } from '@supabase/supabase-js';
 
 export default function CalculatorWrapper({ user }: { user: User }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // Start at 0 for Initial Choice
+  const [mode, setMode] = useState<'buy' | 'sell' | null>(null);
+
+  const handleModeSelect = (selectedMode: 'buy' | 'sell') => {
+      setMode(selectedMode);
+      setStep(1);
+  };
+
+  if (step === 0) {
+      return (
+          <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 min-h-[600px] flex items-center justify-center">
+              <InitialChoice onSelect={handleModeSelect} />
+          </div>
+      );
+  }
 
   return (
     <div className="max-w-7xl mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
@@ -35,7 +50,12 @@ export default function CalculatorWrapper({ user }: { user: User }) {
 
              {/* Right Column: Calculator Form */}
              <div className="lg:col-span-8">
-                 <PropertyForm user={user} step={step} setStep={setStep} />
+                 <PropertyForm 
+                    user={user} 
+                    step={step} 
+                    setStep={setStep} 
+                    purpose={mode === 'buy' ? 'investment' : 'sale'}
+                 />
              </div>
         </div>
     </div>

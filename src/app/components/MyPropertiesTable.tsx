@@ -3,24 +3,31 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
-import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter } from 'lucide-react';
+import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { publishProperty, deleteProperty } from '@/app/actions/property';
 
-// Use same type as DB or define new interface
 interface SavedProperty {
   id: number;
   title: string | null;
   address: string;
   type: string;
+  purpose: 'sale' | 'investment';
   sale_price: number;
   rent_price: number;
   profitability: number;
   created_at: string;
   cover_image: string | null;
+  is_listed: boolean;
+  assigned_advisor_id: string | null;
+  assigned_advisor?: {
+    full_name: string | null;
+    verification_status: string;
+  } | null;
 }
 
 const PAGE_SIZE = 10;
@@ -33,6 +40,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
   const [sortBy, setSortBy] = useState<'profitability' | 'created_at' | 'sale_price'>('profitability');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<string>('all');
+  const [publishingId, setPublishingId] = useState<number | null>(null);
   
   const supabase = createClient();
   const router = useRouter();
@@ -45,7 +53,13 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
 
       let query = supabase
         .from('properties')
-        .select('*', { count: 'exact' })
+        .select(`
+            *,
+            assigned_advisor:assigned_advisor_id (
+                full_name,
+                verification_status
+            )
+        `, { count: 'exact' })
         .eq('user_id', userId);
 
       if (filterType !== 'all') {
@@ -67,6 +81,28 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
 
     fetchProperties();
   }, [userId, supabase, page, sortBy, sortOrder, filterType]);
+
+  const handlePublish = async (propertyId: number) => {
+    setPublishingId(propertyId);
+    try {
+        const result = await publishProperty(propertyId);
+        if (result.error === 'SUBSCRIPTION_REQUIRED') {
+            if (confirm('Debes tener una membresía activa para publicar. ¿Deseas ver los planes?')) {
+                router.push('/pricing');
+            }
+        } else if (result.error) {
+            alert('Error al publicar la propiedad');
+        } else {
+            // Reload to show changes (assigned advisor etc)
+            window.location.reload();
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error inesperado');
+    } finally {
+        setPublishingId(null);
+    }
+  };
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -155,7 +191,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
           <tbody className="divide-y divide-gray-200">
             {properties.map((property, index) => {
               const netReturn = property.profitability || 0;
-              const { health } = calculateProfitabilityForList(property.sale_price, property.rent_price); // Keep health for color logic for now or migrate logic
+              const { health } = calculateProfitabilityForList(property.sale_price, property.rent_price); // Keep health for color logic for now
               const healthStyle = getHealthLabel(health);
               const timeAgo = formatDistanceToNow(new Date(property.created_at), { addSuffix: true, locale: es });
 
@@ -165,10 +201,10 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  onClick={() => router.push(`/my-properties/${property.id}`)}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer group"
+                  // onClick={() => router.push(`/my-properties/${property.id}`)} // Disable row click if interfering with button, or handle propagation
+                  className="hover:bg-gray-50 transition-colors group"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     <div className="flex items-center">
                       <div className="relative h-10 w-10 flex-shrink-0">
                           {property.cover_image ? (
@@ -187,28 +223,95 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{property.title || 'Propiedad sin título'}</div>
                         <div className="text-xs text-gray-500 capitalize">{property.type}</div>
+                        
+                        {/* Status Tags */}
+                        {property.is_listed ? (
+                            <div className="mt-1 flex items-center gap-2">
+                                <span className="px-2 inline-flex text-[10px] leading-4 font-semibold rounded-full bg-green-100 text-green-800">
+                                    En Venta
+                                </span>
+                                {property.assigned_advisor ? (
+                                    <span className="text-[10px] text-gray-500">
+                                        • Asesor: {property.assigned_advisor.full_name?.split(' ')[0]}
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] text-yellow-600">
+                                        • Buscando asesor...
+                                    </span>
+                                )}
+                            </div>
+                        ) : (
+                             <div className="mt-1 flex items-center gap-2">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePublish(property.id);
+                                    }}
+                                    disabled={publishingId === property.id}
+                                    className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 hover:bg-indigo-100 transition-colors font-medium flex items-center gap-1"
+                                >
+                                    {publishingId === property.id ? '...' : (
+                                        <>
+                                            <DollarSign size={10} /> 
+                                            {property.purpose === 'sale' ? 'Publicar' : 'Vender'}
+                                        </>
+                                    )}
+                                </button>
+                             </div>
+                        )}
+                        
+                        {/* Edit / Delete Actions */}
+                        <div className="mt-2 flex items-center gap-2">
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/my-properties/${property.id}/edit`);
+                                }}
+                                className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                                title="Editar"
+                            >
+                                <Edit2 size={14} />
+                            </button>
+                            <button 
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if(confirm('¿Estás seguro de eliminar esta propiedad?')) {
+                                        await deleteProperty(property.id);
+                                        // Simple reload or state update. Since it's server action with revalidatePath, 
+                                        // router.refresh() might be needed or just refetch.
+                                        // For now let's use window.location.reload() to be sure or filter local state
+                                        setProperties(prev => prev.filter(p => p.id !== property.id));
+                                    }
+                                }}
+                                className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                                title="Eliminar"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     <div className="flex items-center text-sm text-gray-500">
                       <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                       <span className="truncate max-w-[150px]">{property.address}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                       <span className="capitalize">{timeAgo}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     ${property.sale_price.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     ${property.rent_price.toLocaleString()}/mes
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <td className="px-6 py-4 whitespace-nowrap text-center cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${healthStyle.bg} ${healthStyle.color} ${healthStyle.borderColor}`}>
                       <TrendingUp className="mr-1 h-3 w-3" />
                       {netReturn.toFixed(1)}% ({healthStyle.text})

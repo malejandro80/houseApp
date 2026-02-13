@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu } from 'lucide-react';
+import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserRole } from '@/hooks/useUserRole';
 
@@ -39,10 +39,12 @@ export default function UserMenu({ user }: { user: User | null }) {
   const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
 
   const allNavItems = [
-    { name: 'Calculadora', href: '/', icon: Calculator, roles: ['usuario', 'asesor', 'superadmin'] },
-    { name: 'Mis Propiedades', href: '/my-properties', icon: Building2, roles: ['asesor', 'superadmin'] },
+    { name: 'Calculadora', href: '/calculator', icon: Calculator, roles: ['usuario', 'asesor', 'superadmin'] },
+    { name: 'Mis Propiedades', href: '/my-properties', icon: Building2, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Mapa Global', href: '/map', icon: Map, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Mis Estadísticas', href: '/zone-stats', icon: BarChart3, roles: ['asesor', 'superadmin'] },
+    { name: 'Membresía', href: '/pricing', icon: Gem, roles: ['usuario', 'asesor'] }, // Added Membership
+    { name: 'Conviértete en Asesor', href: '/advisor-registration', icon: UserCircle, roles: ['usuario'] },
   ];
 
   const navItems = allNavItems.filter(item => 

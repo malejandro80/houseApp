@@ -16,9 +16,25 @@ import Image from 'next/image';
 import NumberInput from './NumberInput';
 import { useRouter } from 'next/navigation';
 
-export default function PropertyForm({ user, step, setStep }: { user: User | null, step: number, setStep: Dispatch<SetStateAction<number>> }) {
+import { updateProperty } from '@/app/actions/property';
+
+export default function PropertyForm({ 
+    user, 
+    step, 
+    setStep, 
+    purpose = 'investment',
+    initialData = null,
+    isEditMode = false
+}: { 
+    user: User | null, 
+    step: number, 
+    setStep: Dispatch<SetStateAction<number>>, 
+    purpose?: 'sale' | 'investment',
+    initialData?: any,
+    isEditMode?: boolean
+}) {
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>(initialData?.images || []);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   
   const supabase = createClient();
@@ -26,20 +42,44 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
   
   const { register, handleSubmit, watch, setValue, control, formState: { errors }, reset, trigger } = useForm<PropertyFormData>({
     resolver: zodResolver(propertyFormSchema) as any,
-    defaultValues: {
+    defaultValues: initialData ? {
+      title: initialData.title,
+      type: initialData.type,
+      salePrice: initialData.sale_price,
+      rentPrice: initialData.rent_price,
+      areaTotal: initialData.area_total,
+      areaBuilt: initialData.area_built,
+      address: initialData.address,
+      neighborhood: initialData.neighborhood,
+      latitude: initialData.lat,
+      longitude: initialData.lon,
+      age: initialData.age,
+      stratum: initialData.stratum,
+      
+      // Metadata
+      rooms: initialData.metadata?.rooms,
+      bathrooms: initialData.metadata?.bathrooms,
+      parking: initialData.metadata?.parking,
+      amenities: initialData.metadata?.amenities,
+      landUse: initialData.metadata?.land_use,
+      topography: initialData.metadata?.topography,
+      frontage: initialData.metadata?.frontage,
+      footTraffic: initialData.metadata?.foot_traffic,
+      floorResistance: initialData.metadata?.floor_resistance,
+      ceilingHeight: initialData.metadata?.ceiling_height,
+      loadingDocks: initialData.metadata?.loading_docks,
+      power: initialData.metadata?.power,
+
+      // Risk
+      legalStatus: initialData.legal_status,
+      riskZone: initialData.risk_factors?.risk_zone,
+      roadAffectation: initialData.risk_factors?.road_affectation,
+      taxDebt: initialData.risk_factors?.tax_debt,
+      heritage: initialData.risk_factors?.heritage
+
+    } : {
       type: 'house',
       legalStatus: 'deed_ready',
-      salePrice: undefined,
-      rentPrice: undefined,
-      areaTotal: undefined,
-      areaBuilt: undefined,
-      age: undefined,
-      stratum: undefined,
-      rooms: undefined,
-      bathrooms: undefined,
-      parking: undefined,
-      frontage: undefined,
-      taxDebt: undefined,
       riskZone: false,
       roadAffectation: false,
       heritage: false
@@ -90,7 +130,7 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
     
     setIsUploading(true);
     try {
-        // 1. Upload Images
+        // 1. Upload NEW Images
         const uploadedUrls: string[] = [];
         for (const file of selectedImages) {
             const fileName = `${user.id}/${Date.now()}_${file.name}`;
@@ -105,58 +145,118 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
                 uploadedUrls.push(publicUrl);
             }
         }
+        
+        // Combine old images (if provided in initialData) with new ones
+        // For simplicity in this edit flow, we are just appending new ones. 
+        // A full implementation would allow deleting existing images.
+        const finalImages = [...(initialData?.images || []), ...uploadedUrls];
 
-        // 2. Insert into Properties Table
-        const { error } = await supabase.from('properties').insert({
-            user_id: user.id,
-            title: data.title,
-            type: data.type,
-            sale_price: data.salePrice,
-            rent_price: data.rentPrice,
-            area_total: data.areaTotal,
-            area_built: data.areaBuilt,
-            address: data.address,
-            neighborhood: data.neighborhood,
-            lat: data.latitude,
-            lon: data.longitude,
-            age: data.age,
-            stratum: data.stratum,
+        if (isEditMode && initialData) {
+            // UPDATE
+            const updatePayload = {
+                title: data.title,
+                type: data.type,
+                sale_price: data.salePrice,
+                rent_price: data.rentPrice,
+                area_total: data.areaTotal,
+                area_built: data.areaBuilt,
+                address: data.address,
+                neighborhood: data.neighborhood,
+                lat: data.latitude,
+                lon: data.longitude,
+                age: data.age,
+                stratum: data.stratum,
+                
+                // Metadata
+                metadata: {
+                    rooms: data.rooms,
+                    bathrooms: data.bathrooms,
+                    parking: data.parking,
+                    amenities: data.amenities,
+                    land_use: data.landUse,
+                    topography: data.topography,
+                    frontage: data.frontage,
+                    foot_traffic: data.footTraffic,
+                    floor_resistance: data.floorResistance,
+                    ceiling_height: data.ceilingHeight,
+                    loading_docks: data.loadingDocks,
+                    power: data.power
+                },
+
+                // Risk
+                legal_status: data.legalStatus,
+                risk_factors: {
+                    risk_zone: data.riskZone,
+                    road_affectation: data.roadAffectation,
+                    tax_debt: data.taxDebt,
+                    heritage: data.heritage
+                },
+                
+                images: finalImages,
+                cover_image: finalImages[0] || null
+            };
+
+            const result = await updateProperty(initialData.id, updatePayload);
+            if (result.error) throw new Error(result.error);
             
-            // Metadata
-            metadata: {
-                rooms: data.rooms,
-                bathrooms: data.bathrooms,
-                parking: data.parking,
-                amenities: data.amenities,
-                land_use: data.landUse,
-                topography: data.topography,
-                frontage: data.frontage,
-                foot_traffic: data.footTraffic,
-                floor_resistance: data.floorResistance,
-                ceiling_height: data.ceilingHeight,
-                loading_docks: data.loadingDocks,
-                power: data.power
-            },
+            router.push('/my-properties');
+            router.refresh();
 
-            // Risk
-            legal_status: data.legalStatus,
-            risk_factors: {
-                risk_zone: data.riskZone,
-                road_affectation: data.roadAffectation,
-                tax_debt: data.taxDebt,
-                heritage: data.heritage
-            },
-            
-            images: uploadedUrls,
-            cover_image: uploadedUrls[0] || null
-        });
+        } else {
+            // INSERT (Existing Logic)
+            const { error } = await supabase.from('properties').insert({
+                user_id: user.id,
+                title: data.title,
+                type: data.type,
+                sale_price: data.salePrice,
+                rent_price: data.rentPrice,
+                area_total: data.areaTotal,
+                area_built: data.areaBuilt,
+                address: data.address,
+                neighborhood: data.neighborhood,
+                lat: data.latitude,
+                lon: data.longitude,
+                age: data.age,
+                stratum: data.stratum,
+                purpose: purpose, 
+                is_listed: false,
+                
+                // Metadata
+                metadata: {
+                    rooms: data.rooms,
+                    bathrooms: data.bathrooms,
+                    parking: data.parking,
+                    amenities: data.amenities,
+                    land_use: data.landUse,
+                    topography: data.topography,
+                    frontage: data.frontage,
+                    foot_traffic: data.footTraffic,
+                    floor_resistance: data.floorResistance,
+                    ceiling_height: data.ceilingHeight,
+                    loading_docks: data.loadingDocks,
+                    power: data.power
+                },
 
-        if (error) throw error;
+                // Risk
+                legal_status: data.legalStatus,
+                risk_factors: {
+                    risk_zone: data.riskZone,
+                    road_affectation: data.roadAffectation,
+                    tax_debt: data.taxDebt,
+                    heritage: data.heritage
+                },
+                
+                images: finalImages,
+                cover_image: finalImages[0] || null
+            });
 
-        // Redirect to list
-        router.push('/my-properties');
-        reset();
-        setStep(1);
+            if (error) throw error;
+
+            // Redirect to list
+            router.push('/my-properties');
+            reset();
+            setStep(1);
+        }
 
     } catch (error) {
         console.error('Error:', error);
@@ -200,7 +300,6 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
     <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
       
       <form onSubmit={handleSubmit(onSubmit, (e) => console.log('Validation Errors:', e))} className="p-6">
-        <AnimatePresence mode="wait">
             
             {/* STEP 1: BASIC INFO */}
             {step === 1 && (
@@ -209,7 +308,6 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
                     variants={variants}
                     initial="enter"
                     animate="center"
-                    exit="exit"
                     className="space-y-6"
                 >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -289,7 +387,6 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
                     variants={variants}
                     initial="enter"
                     animate="center"
-                    exit="exit"
                     className="space-y-6"
                 >
                     <div className="grid grid-cols-2 gap-6">
@@ -404,7 +501,6 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
                     variants={variants}
                     initial="enter"
                     animate="center"
-                    exit="exit"
                     className="space-y-6"
                 >
                     <div className="bg-red-50 p-4 rounded-xl border border-red-100">
@@ -451,8 +547,6 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
                 </motion.div>
             )}
 
-        </AnimatePresence>
-
         {/* CONTROLS */}
         <div className="flex justify-between mt-8 pt-4 border-t">
             {step > 1 ? (
@@ -468,7 +562,7 @@ export default function PropertyForm({ user, step, setStep }: { user: User | nul
             ) : (
                 <button type="submit" disabled={isUploading} className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-lg disabled:opacity-50">
                     {isUploading ? <Loader2 className="animate-spin" /> : <Save size={16} />}
-                    Guardar Propiedad
+                    {isEditMode ? 'Actualizar Propiedad' : 'Guardar Propiedad'}
                 </button>
             )}
         </div>
