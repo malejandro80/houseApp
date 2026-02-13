@@ -6,9 +6,6 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  // Start by creating a Supabase client
-  // It is important that we pass the cookie methods to the client
-  // so that it can read and write cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,8 +15,6 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // In the middleware, we need to update both the request and response cookies
-          // so that the session is persisted correctly
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
@@ -32,9 +27,43 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // refresh session if expired - required for Server Components
-  // https://supabase.com/docs/guides/auth/server-side/nextjs
-  await supabase.auth.getUser()
+  // 1. Get User
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 2. Protected Routes Logic
+  const path = request.nextUrl.pathname;
+  
+  // Public routes that don't need auth
+  const publicRoutes = ['/login', '/auth', '/', '/map'];
+  const isPublicRoute = publicRoutes.some(route => path.startsWith(route));
+
+  if (!user && !isPublicRoute) {
+     // Redirect to login if accessing protected route without user
+     const url = request.nextUrl.clone()
+     url.pathname = '/login'
+     return NextResponse.redirect(url)
+  }
+
+  // 3. Role-Based Access Control (RBAC)
+  if (user) {
+      // Fetch role from profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      const role = profile?.role || 'usuario';
+
+      // Example: Restrict 'asesor' routes
+      if (path.startsWith('/admin') && role !== 'superadmin') {
+          return NextResponse.redirect(new URL('/', request.url));
+      }
+
+      if (path.startsWith('/manage') && !['superadmin', 'asesor'].includes(role)) {
+          return NextResponse.redirect(new URL('/', request.url));
+      }
+  }
 
   return supabaseResponse
 }

@@ -7,12 +7,14 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export default function UserMenu({ user }: { user: User | null }) {
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { role, isAsesor, loading } = useUserRole();
 
   // Close menu on route change
   useEffect(() => {
@@ -36,12 +38,16 @@ export default function UserMenu({ user }: { user: User | null }) {
   const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
 
-  const navItems = [
-    { name: 'Calculadora', href: '/', icon: Calculator },
-    { name: 'Mis Propiedades', href: '/my-properties', icon: Building2 },
-    { name: 'Mapa Global', href: '/map', icon: Map },
-    { name: 'Mis Estadísticas', href: '/zone-stats', icon: BarChart3 },
+  const allNavItems = [
+    { name: 'Calculadora', href: '/', icon: Calculator, roles: ['usuario', 'asesor', 'superadmin'] },
+    { name: 'Mis Propiedades', href: '/my-properties', icon: Building2, roles: ['asesor', 'superadmin'] },
+    { name: 'Mapa Global', href: '/map', icon: Map, roles: ['usuario', 'asesor', 'superadmin'] },
+    { name: 'Mis Estadísticas', href: '/zone-stats', icon: BarChart3, roles: ['asesor', 'superadmin'] },
   ];
+
+  const navItems = allNavItems.filter(item => 
+    !loading && role && item.roles.includes(role)
+  );
 
   return (
     <>
@@ -51,6 +57,7 @@ export default function UserMenu({ user }: { user: User | null }) {
       >
         <span className="text-sm font-medium text-gray-700 px-2 hidden sm:block group-hover:text-indigo-600 transition-colors">
             {displayName}
+            {role && <span className="block text-[10px] text-gray-400 capitalize -mt-0.5">{role}</span>}
         </span>
         
         {avatarUrl ? (

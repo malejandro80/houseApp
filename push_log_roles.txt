@@ -1,0 +1,57 @@
+open supabase/.temp/profile: no such file or directory
+Loading project ref from file: supabase/.temp/project-ref
+Using connection pooler: postgresql://postgres.xbirlummltqnesuzdlov@aws-1-us-east-2.pooler.supabase.com:5432/postgres
+Using database password from env var...
+Supabase CLI 2.75.0
+Using profile: supabase (supabase.co)
+Connecting to remote database...
+2026/02/13 14:43:30 PG Send: {"Type":"StartupMessage","ProtocolVersion":196608,"Parameters":{"database":"postgres","user":"postgres.xbirlummltqnesuzdlov"}}
+2026/02/13 14:43:30 PG Recv: {"Type":"AuthenticationSASL","AuthMechanisms":["SCRAM-SHA-256"]}
+2026/02/13 14:43:30 PG Send: {"Type":"SASLInitialResponse","AuthMechanism":"SCRAM-SHA-256","Data":"n,,n=,r=emRnZhYDFFDXkScbNzXNKAHN"}
+2026/02/13 14:43:31 PG Recv: {"Type":"AuthenticationSASLContinue","Data":"r=emRnZhYDFFDXkScbNzXNKAHNRUhmZmR5NXM2a08xaWpNRmpYTVAxRkFQbE5KUQ==,s=R9Lb2wTe5iZW1t0Al3ynDA==,i=4096"}
+2026/02/13 14:43:31 PG Send: {"Type":"SASLResponse","Data":"c=biws,r=emRnZhYDFFDXkScbNzXNKAHNRUhmZmR5NXM2a08xaWpNRmpYTVAxRkFQbE5KUQ==,p=S2c7VFOuTZYrNYSG6ffmSZtu8t8TaLaUlPSPPje5tys="}
+2026/02/13 14:43:31 PG Recv: {"Type":"AuthenticationSASLFinal","Data":"v=dY/j4yDjroILM8MBEkPb0JBAp/VDvNeHhJFypholOkA="}
+2026/02/13 14:43:31 PG Recv: {"Type":"AuthenticationOK"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"DateStyle","Value":"ISO, MDY"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"IntervalStyle","Value":"postgres"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"TimeZone","Value":"UTC"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"application_name","Value":"Supavisor"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"client_encoding","Value":"UTF8"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"default_transaction_read_only","Value":"off"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"in_hot_standby","Value":"off"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"integer_datetimes","Value":"on"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"is_superuser","Value":"off"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"scram_iterations","Value":"4096"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"server_encoding","Value":"UTF8"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"server_version","Value":"17.6"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"session_authorization","Value":"postgres"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterStatus","Name":"standard_conforming_strings","Value":"on"}
+2026/02/13 14:43:31 PG Recv: {"Type":"BackendKeyData","ProcessID":146743416,"SecretKey":3825186185}
+2026/02/13 14:43:31 PG Recv: {"Type":"ReadyForQuery","TxStatus":"I"}
+2026/02/13 14:43:31 PG Send: {"Type":"Parse","Name":"lrupsc_1_0","Query":"SELECT version FROM supabase_migrations.schema_migrations ORDER BY version","ParameterOIDs":null}
+2026/02/13 14:43:31 PG Send: {"Type":"Describe","ObjectType":"S","Name":"lrupsc_1_0"}
+2026/02/13 14:43:31 PG Send: {"Type":"Sync"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParseComplete"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ParameterDescription","ParameterOIDs":[]}
+2026/02/13 14:43:31 PG Recv: {"Type":"RowDescription","Fields":[{"Name":"version","TableOID":18689,"TableAttributeNumber":1,"DataTypeOID":25,"DataTypeSize":-1,"TypeModifier":-1,"Format":0}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"ReadyForQuery","TxStatus":"I"}
+2026/02/13 14:43:31 PG Send: {"Type":"Bind","DestinationPortal":"","PreparedStatement":"lrupsc_1_0","ParameterFormatCodes":null,"Parameters":[],"ResultFormatCodes":[0]}
+2026/02/13 14:43:31 PG Send: {"Type":"Describe","ObjectType":"P","Name":""}
+2026/02/13 14:43:31 PG Send: {"Type":"Execute","Portal":"","MaxRows":0}
+2026/02/13 14:43:31 PG Send: {"Type":"Sync"}
+2026/02/13 14:43:31 PG Recv: {"Type":"BindComplete"}
+2026/02/13 14:43:31 PG Recv: {"Type":"RowDescription","Fields":[{"Name":"version","TableOID":18689,"TableAttributeNumber":1,"DataTypeOID":25,"DataTypeSize":-1,"TypeModifier":-1,"Format":0}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"DataRow","Values":[{"text":"20240210000000"}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"DataRow","Values":[{"text":"20240210181500"}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"DataRow","Values":[{"text":"20260210182500"}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"DataRow","Values":[{"text":"20260210201500"}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"DataRow","Values":[{"text":"20260213191500"}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"DataRow","Values":[{"text":"20260213194500"}]}
+2026/02/13 14:43:31 PG Recv: {"Type":"CommandComplete","CommandTag":"SELECT 6"}
+2026/02/13 14:43:31 PG Recv: {"Type":"ReadyForQuery","TxStatus":"I"}
+Found local migration files to be inserted before the last migration on remote database.
+
+Rerun the command with --include-all flag to apply these migrations:
+supabase/migrations/20260213150000_create_profiles_table.sql
+
+2026/02/13 14:43:31 PG Send: {"Type":"Terminate"}

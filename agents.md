@@ -9,7 +9,7 @@ This project uses a specialized agentic workflow. For every task, the **Orchestr
 - **PM:** Product Strategy & Requirements.
 - **Copywriter:** Content Strategy, Tone & Voice (Spanish).
 - **UX/UI:** Design System (ShadcnUI) & User Experience.
-- **Database Analyst:** Supabase Schema & RLS Security.
+- **Database Analyst:** Supabase Schema & RLS Security. MUST strictly adhere to ACID principles (Atomicity, Consistency, Isolation, Durability) and ensure Database Normalization (at least 3NF) to prevent redundancy and anomalies.
 - **Backend Dev:** Server Actions & Supabase Logic.
 - **Frontend Dev:** React Server Components & UI Implementation.
 - **QA Engineer:** Manual Testing.
@@ -17,12 +17,13 @@ This project uses a specialized agentic workflow. For every task, the **Orchestr
 
 ## 🛠 Technical Standards (The Golden Rules)
 1. **Architecture:** All application code MUST reside in the `/src` directory (`/src/app`, `/src/components`, `/src/actions`, etc.).
-2. **Database First:** No code shall be written before the `Database Analyst` confirms the schema and RLS policies in `/supabase/migrations`.
+2. **Database First:** No code shall be written before the 'Database Analyst' confirms the schema. Designs MUST follow **ACID** properties and **Database Normalization** standards (3NF+) to ensure data integrity and minimize redundancy.
 3. **Type Safety:** TypeScript is non-negotiable. Prefer `interfaces` over `types`. Use generated Supabase types for all DB operations.
 4. **Performance:** Prioritize Server Components. Use `'use client'` strictly for interactivity or Web APIs. Wrap client components in `Suspense`.
 5. **English Standard:** All code, file names, folder names, commit messages, and variable names MUST be in English. Spanish is ONLY allowed for user-facing strings (UI text).
 6. **Security:** RLS must be enabled on all tables. Never use `service_role` in the frontend or standard server actions.
 7. **Dependency Management:** ALWAYS run `pnpm install` (or equivalent) to update the lockfile (`pnpm-lock.yaml`) whenever `package.json` is modified. This prevents `ERR_PNPM_OUTDATED_LOCKFILE` during Vercel deployment.
+8. **SQL Scripts:** All SQL files MUST reside in the `supabase` directory. Use `supabase/migrations` for schema changes and `supabase/scripts` for auxiliary scripts (seeds, setup, maintenance). Do NOT place SQL files in the project root.
 
 ## 📁 Naming Conventions
 - **Folders:** always-kebab-case (English), e.g., `/my-properties`, `/user-profile`.

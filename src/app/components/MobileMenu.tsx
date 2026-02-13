@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
+import { useUserRole } from '@/hooks/useUserRole';
 
 type MobileMenuProps = {
   user: User | null;
@@ -11,6 +12,7 @@ type MobileMenuProps = {
 
 export default function MobileMenu({ user }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { isAsesor, loading } = useUserRole();
 
   return (
     <div className="md:hidden flex items-center">
@@ -34,13 +36,17 @@ export default function MobileMenu({ user }: MobileMenuProps) {
           
           {user && (
             <>
-              <Link 
-                href="/my-properties" 
-                className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Mis Propiedades
-              </Link>
+              {/* Only Asesores/Admins can see My Properties management */}
+              {!loading && isAsesor && (
+                  <Link 
+                    href="/my-properties" 
+                    className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Mis Propiedades
+                  </Link>
+              )}
+              
               <Link 
                 href="/map" 
                 className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
