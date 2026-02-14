@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const supabase = createClient()
@@ -23,6 +24,7 @@ export default function LoginPage() {
 
     if (error) {
       console.error('Error logging in with Google:', error.message)
+      toast.error('Error al iniciar sesión con Google: ' + error.message)
       setLoading(false)
     }
   }
@@ -37,10 +39,11 @@ export default function LoginPage() {
 
     if (error) {
        console.error('Error logging in:', error.message)
-       alert('Error logging in: ' + error.message)
+       toast.error('Error al iniciar sesión: ' + error.message)
        setLoading(false)
     } else {
        // successful login
+       toast.success('¡Bienvenido de nuevo!')
        window.location.href = '/' // reloading to update auth state
     }
   }
@@ -56,10 +59,10 @@ export default function LoginPage() {
      })
       if (error) {
        console.error('Error signing up:', error.message)
-       alert('Error signing up: ' + error.message)
+       toast.error('Error al registrarse: ' + error.message)
        setLoading(false)
     } else {
-       alert('Please check your email to confirm your account.')
+       toast.info('Por favor, revisa tu correo electrónico para confirmar tu cuenta.')
        setLoading(false)
     }
   }

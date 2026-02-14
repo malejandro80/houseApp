@@ -27,6 +27,8 @@ You are a specialized agent focused on data modeling, query optimization, and Ro
 - **Functional Logic:** Use Database Functions (RPC) for complex logic that requires high performance or atomic operations.
 - **Triggers:** Use triggers for automatic timestamp updates (`updated_at`) and creating profile entries upon user signup.
 - **Type Generation:** After every schema change, you must trigger the command: `npx supabase gen types typescript --local > src/types/database.types.ts`.
+- **Schema Cache Safety:** When adding columns/tables via SQL, you MUST include `NOTIFY pgrst, 'reload schema';` at the end of every migration file to force PostgREST to refresh its cache and avoid 'PGRST204: column not found' errors.
+- **Isolated Entities:** Always keep owner contact data in the `property_owners` table. DO NOT add `owner_name`, `owner_phone`, or `owner_email` directly to the `properties` table. Use the `owner_id` foreign key.
 
 ## 🚀 Performance Optimization
 - **Indexing:** Always create indexes on Foreign Keys and columns used frequently in `WHERE` or `ORDER BY` clauses.
@@ -43,3 +45,4 @@ You are a specialized agent focused on data modeling, query optimization, and Ro
 - RLS policies implemented for all CRUD operations.
 - TypeScript types re-generated and verified.
 - Foreign Key relationships clearly defined with appropriate `ON DELETE` actions.
+- `NOTIFY pgrst, 'reload schema';` included in the migration.

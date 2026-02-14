@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { publishProperty, deleteProperty } from '@/app/actions/property';
+import { toast } from 'sonner';
 
 interface SavedProperty {
   id: string;
@@ -93,14 +94,14 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                 router.push('/pricing');
             }
         } else if (result.error) {
-            alert('Error al publicar la propiedad');
+            toast.error('Error al publicar la propiedad');
         } else {
             // Reload to show changes (assigned advisor etc)
             window.location.reload();
         }
     } catch (e) {
         console.error(e);
-        alert('Error inesperado');
+        toast.error('Error inesperado');
     } finally {
         setPublishingId(null);
     }

@@ -3,31 +3,99 @@
 import { useState } from 'react';
 import PropertyForm from "@/app/components/PropertyForm";
 import CalculatorStepper from "@/app/components/CalculatorStepper";
+import SuggestionsSlider from "@/app/components/SuggestionsSlider";
 import { User } from '@supabase/supabase-js';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 export default function EditWrapper({ user, property }: { user: User, property: any }) {
-  const [step, setStep] = useState(1); // Start at step 1 for editing
+  const [step, setStep] = useState(1);
+  const [purpose, setPurpose] = useState<'sale' | 'investment'>(property.purpose || 'sale');
   
   return (
     <div className="max-w-7xl mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         
-        <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Editar Propiedad</h1>
-            <p className="text-gray-500">Actualiza la información de tu análisis o venta.</p>
+        <div className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Editar Propiedad</h1>
+              <p className="text-gray-500 mt-2 font-medium">
+                {purpose === 'investment' ? 'Actualizando análisis de inversión.' : 'Actualizando publicación de venta.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+                {/* Refined Purpose Switcher */}
+                <div className="flex flex-col items-end gap-1.5">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Propósito</span>
+                    <div className="bg-gray-100/80 backdrop-blur-sm p-1 rounded-xl flex items-center relative border border-gray-200/50 shadow-inner">
+                        <button 
+                            onClick={() => setPurpose('sale')}
+                            className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${purpose === 'sale' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Venta
+                        </button>
+                        <button 
+                            onClick={() => setPurpose('investment')}
+                            className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${purpose === 'investment' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Inversión
+                        </button>
+                        
+                        {/* Active Background Pill */}
+                        <motion.div 
+                            layoutId="activePillEdit"
+                            initial={false}
+                            animate={{ x: purpose === 'sale' ? 0 : '100.5%' }}
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            className="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-gray-900 rounded-lg shadow-md border border-white/10"
+                        />
+                    </div>
+                </div>
+
+                <div className="h-10 w-px bg-gray-200 mx-2 self-end mb-1" />
+
+                <Link 
+                  href="/my-properties"
+                  className="mt-5 flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all shadow-sm w-fit"
+                >
+                  <ArrowLeft size={18} />
+                  Volver a mis propiedades
+                </Link>
+            </div>
         </div>
 
         {/* Full Width Stepper */}
-        <CalculatorStepper step={step} />
+        <CalculatorStepper step={step} purpose={purpose} />
 
-        <div className="mt-8">
-             <PropertyForm 
-                user={user} 
-                step={step} 
-                setStep={setStep} 
-                purpose={property.purpose}
-                initialData={property}
-                isEditMode={true}
-             />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-8">
+             {/* Left Column: Suggestions (Sticky) */}
+             <div className="hidden lg:block lg:col-span-4 sticky top-24 space-y-8">
+                 <SuggestionsSlider />
+                 
+                 <div className="p-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl text-white shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                    <div className="relative z-10">
+                        <h4 className="font-bold text-lg mb-2">¿Necesitas Valuación Certificada?</h4>
+                        <p className="text-blue-100 text-sm mb-4 leading-relaxed">Nuestros peritos pueden validar tu análisis antes de que ofertes.</p>
+                        <button className="w-full py-2.5 bg-white text-blue-700 font-bold rounded-xl text-sm hover:bg-blue-50 transition-colors shadow-sm">
+                            Contactar Asesor
+                        </button>
+                    </div>
+                    {/* Decorative */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform duration-700"></div>
+                 </div>
+             </div>
+
+             {/* Right Column: Calculator Form */}
+             <div className="lg:col-span-8">
+                 <PropertyForm 
+                    user={user} 
+                    step={step} 
+                    setStep={setStep} 
+                    purpose={purpose}
+                    initialData={property}
+                    isEditMode={true}
+                 />
+             </div>
         </div>
     </div>
   );

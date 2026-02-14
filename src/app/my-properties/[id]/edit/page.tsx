@@ -11,10 +11,9 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
     redirect('/login');
   }
 
-  // Fetch Property
   const { data: property, error } = await supabase
     .from('properties')
-    .select('*')
+    .select('*, property_owners(*)')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();

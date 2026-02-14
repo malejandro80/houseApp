@@ -10,6 +10,7 @@ import { getUserZones, createZone, deleteZone, Zone } from '@/app/actions/zone-a
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@supabase/supabase-js';
 import { getAdvisorContact } from '@/app/actions/contact';
+import { toast } from 'sonner';
 
 type Property = {
   id: string; 
@@ -41,18 +42,37 @@ const createColoredMarker = (color: string) => {
 type PropertiesMapProps = {
   properties: Property[];
   user?: User | null;
+  onBoundsChange?: (bounds: L.LatLngBounds) => void;
+  children?: React.ReactNode;
 };
 
-function MapController({ onMapClick }: { onMapClick: (center: L.LatLng) => void }) {
+function MapController({ 
+  onMapClick, 
+  onBoundsChange 
+}: { 
+  onMapClick: (center: L.LatLng) => void,
+  onBoundsChange?: (bounds: L.LatLngBounds) => void
+}) {
+  const map = useMap();
+  
   useMapEvents({
     click: (e) => {
       onMapClick(e.latlng);
     },
+    moveend: () => {
+      onBoundsChange?.(map.getBounds());
+    }
   });
+
+  useEffect(() => {
+    // Initial bounds trigger
+    onBoundsChange?.(map.getBounds());
+  }, []);
+
   return null;
 }
 
-export default function PropertiesMap({ properties, user }: PropertiesMapProps) {
+export default function PropertiesMap({ properties, user, onBoundsChange, children }: PropertiesMapProps) {
   // Center: Mexico City default or first property
   const defaultCenter: [number, number] = properties.length > 0
     ? [properties[0].lat, properties[0].lon]
@@ -125,7 +145,7 @@ export default function PropertiesMap({ properties, user }: PropertiesMapProps) 
       await loadZones(); // Reload list
       setActiveTab('my-zones');
     } catch (error) {
-      alert('Error creating zone');
+      toast.error('Error al crear la zona');
     } finally {
       setCreatingZone(false);
     }
@@ -136,8 +156,9 @@ export default function PropertiesMap({ properties, user }: PropertiesMapProps) 
     try {
       await deleteZone(id);
       await loadZones();
+      toast.success('Zona eliminada');
     } catch (error) {
-      alert('Error deleting zone');
+      toast.error('Error al eliminar la zona');
     }
   };
 
@@ -158,7 +179,7 @@ export default function PropertiesMap({ properties, user }: PropertiesMapProps) 
   
   const handleContactAdvisor = async (propertyId: string, advisorId: string | undefined | null) => {
       if (!advisorId) {
-          alert('Esta propiedad no tiene un asesor asignado aún.');
+          toast.info('Esta propiedad no tiene un asesor asignado aún.');
           return;
       }
       
@@ -168,11 +189,11 @@ export default function PropertiesMap({ properties, user }: PropertiesMapProps) 
           if (contact.email) {
               window.location.href = `mailto:${contact.email}?subject=Interés en propiedad ${propertyId}&body=Hola, estoy interesado en recibir más información sobre esta propiedad.`;
           } else {
-              alert('No se encontró información de contacto para este asesor.');
+              toast.error('No se encontró información de contacto para este asesor.');
           }
       } catch (e) {
           console.error(e);
-          alert('Error al contactar asesor.');
+          toast.error('Error al contactar asesor.');
       } finally {
           setContactingId(null);
       }
@@ -191,8 +212,9 @@ export default function PropertiesMap({ properties, user }: PropertiesMapProps) 
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         
-        <MapController onMapClick={handleMapClick} />
-        <LocateControl autoLocate={!user} />
+        <MapController onMapClick={handleMapClick} onBoundsChange={onBoundsChange} />
+        <LocateControl autoLocate={true} />
+        {children}
 
         {/* Render Properties */}
         {properties.map((property) => {
@@ -693,7 +715,7 @@ function LocateControl({ autoLocate = false }: { autoLocate?: boolean }) {
     locationerror(e) {
         // Only alert if manually triggered or if critical. For auto-locate, maybe silent fail or console warn is better to avoid annoying popups if denied previously.
         console.warn('Location access denied or error.');
-        if (!autoLocate) alert('No pudimos acceder a tu ubicación. Por favor revisa los permisos.');
+        if (!autoLocate) toast.error('No pudimos acceder a tu ubicación. Por favor revisa los permisos.');
     }
   });
 

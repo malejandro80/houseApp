@@ -44,6 +44,11 @@ You are a specialized agent focused on building high-performance, accessible, an
 - **Framer Motion:** Use for declarative animations to enhance UX without compromising performance.
 - **Typography & Contrast:** All inputs and labels must use high-contrast text (`text-gray-900` or equivalent) for readability. Avoid light grays for essential text.
 
+## ⚡️ Framer Motion & DOM Safety
+- **AnimatePresence + Step Forms:** When using `AnimatePresence` for multi-step forms, wrap each step's content in an individual `motion.div` with a unique `key` (e.g., `{step === 1 && <motion.div key="1">...}`). 
+- **Avoid Keyed Containers with Conditional Children:** Never change the `key` of a container while its children are conditionally rendered inside it based on the same state. This causes React to remove children before the container exits, leading to `removeChild` errors.
+- **Stable IDs:** Always provide static, unique `id`s to components that use Portals or move DOM nodes (like `DndContext`), to prevent hydration mismatches and DOM desync.
+
 ## 🐛 Hydration Safety Standard
 - **No Invalid Nesting:** Never place a `<div>` inside a `<p>`. Use `<span>` or change the parent to a `<div>`.
 - **SSR Compatibility:** Avoid using `window`, `document`, or random values (`Math.random()`) in the initial render. Use `useEffect` for client-only logic.
@@ -53,3 +58,4 @@ You are a specialized agent focused on building high-performance, accessible, an
 - Component is mobile-responsive and accessible.
 - Web Vitals (LCP, CLS, FID) are considered.
 - Component is placed in the correct `/src` sub-directory according to its scope.
+- **PGRST Sync:** If the console shows a 'column not found' error after a deployment, suggest executing `NOTIFY pgrst, 'reload schema';` in the database.

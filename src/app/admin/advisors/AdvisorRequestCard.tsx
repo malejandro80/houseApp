@@ -14,31 +14,20 @@ interface AdvisorRequestProps {
   };
 }
 
+import { toast } from 'sonner';
+
 export default function AdvisorRequestCard({ profile }: AdvisorRequestProps) {
   const [loading, setLoading] = useState(false);
 
-  // Helper to extract filename/type from URL if needed, or just show link
-  // Since we store full path in storage, we need to construct the public URL or signed URL.
-  // Wait, `documents` stores the path `advisor-documents/userId/filename`.
-  // We need to generate a signed URL or public URL.
-  // Ideally the parent component passed signed URLs, or we generate them here? 
-  // Generation of signed URLs is async server-side.
-  // Let's assume the passed `documents` are ALREADY signed URLs or public URLs for simplicity in this component?
-  // Or better, let's just make them clickable and let the browser handle it if they are public?
-  // The bucket is private. So we need signed URLs.
-  // I should handle signed URL generation in the PARENT server component.
-
-  // Let's assume profile.documents contains string paths, and we receive a separate array of signedUrl objects?
-  // Or the parent transforms the profile object to include signedUrls.
-  
   const handleVerify = async (action: 'approve' | 'reject') => {
     if (!confirm(`¿Estás seguro de ${action === 'approve' ? 'APROBAR' : 'RECHAZAR'} a este asesor?`)) return;
     
     setLoading(true);
     try {
       await verifyAdvisor(profile.id, action);
+      toast.success(action === 'approve' ? 'Asesor aprobado' : 'Asesor rechazado');
     } catch (error) {
-      alert('Error en la operación');
+      toast.error('Error en la operación');
     } finally {
       setLoading(false);
     }

@@ -39,7 +39,7 @@ export default function UserMenu({ user }: { user: User | null }) {
   const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
 
   const allNavItems = [
-    { name: 'Calculadora', href: '/calculator', icon: Calculator, roles: ['usuario', 'asesor', 'superadmin'] },
+    { name: 'Agregar Propiedad', href: '/calculator', icon: Calculator, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Mis Propiedades', href: '/my-properties', icon: Building2, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Mapa Global', href: '/map', icon: Map, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Mis Estadísticas', href: '/zone-stats', icon: BarChart3, roles: ['asesor', 'superadmin'] },

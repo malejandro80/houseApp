@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import Navbar from "./components/Navbar";
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 min-h-screen text-gray-900`}
       >
+        <Toaster position="bottom-right" richColors />
         <Navbar />
         {children}
       </body>

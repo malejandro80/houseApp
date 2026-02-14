@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { LayoutGrid, Home, TrendingUp, Filter } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export type Property = {
   id: string;
@@ -25,7 +27,9 @@ export type Property = {
 export default function MapClient({ user }: { user: User | null }) {
   const supabase = createClient();
   const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [filter, setFilter] = useState<'market' | 'sale' | 'investment'>('market');
+  const currentBounds = useRef<L.LatLngBounds | null>(null);
 
   // Dynamically import map to avoid SSR issues
   const PropertiesMap = useMemo(() => dynamic(
@@ -36,72 +40,114 @@ export default function MapClient({ user }: { user: User | null }) {
     }
   ), []);
 
-  useEffect(() => {
-    async function fetchProperties() {
-      try {
-        let query = supabase
-          .from('properties')
-          .select(`
-            *,
-            assigned_advisor:assigned_advisor_id(full_name)
-          `)
-          .not('lat', 'is', null)
-          .not('lon', 'is', null);
+  const fetchProperties = async (bounds: L.LatLngBounds) => {
+    try {
+      setIsFetching(true);
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
 
-        // Filter logic:
-        // Public: is_listed = true
-        // Logged in: is_listed = true OR user_id = my_id
-        console.log('aquí1');
-        
-        if (user) {
-            // Logged in: is_listed (Public Sales) OR my properties (Investments, drafts)
-            query = query.or(`is_listed.eq.true,user_id.eq.${user.id}`);
-            console.log('aquí');
-        } else {
-            // Public: Only listed properties (which are by definition 'sale')
-            query = query.eq('is_listed', true);
-            console.log('aquí2');
-        }
+      let query = supabase
+        .from('properties')
+        .select(`
+          *,
+          assigned_advisor:assigned_advisor_id(full_name)
+        `)
+        .gte('lat', sw.lat)
+        .lte('lat', ne.lat)
+        .gte('lon', sw.lng)
+        .lte('lon', ne.lng);
 
-        console.log(query,'aquí3');
-        const { data, error } = await query;
-
-
-        if (error) {
-          console.error('Error fetching properties:', error);
-        } else {
-          setProperties(data as any || []);
-        }
-      } catch (err) {
-        console.error('Unexpected error:', err);
-      } finally {
-        setLoading(false);
+      if (user) {
+          if (filter === 'market') {
+              // Show only public listed properties (Market view)
+              query = query.eq('is_listed', true);
+          } else {
+              // Strictly my properties by purpose (sale or investment)
+              query = query.eq('user_id', user.id).eq('purpose', filter);
+          }
+      } else {
+          query = query.eq('is_listed', true);
       }
-    }
 
-    fetchProperties();
-  }, [supabase]);
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching properties:', error);
+      } else {
+        setProperties(data as any || []);
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  // Re-fetch when filter changes
+  useEffect(() => {
+    if (currentBounds.current) {
+        fetchProperties(currentBounds.current);
+    }
+  }, [filter]);
+
+  const handleBoundsChange = (bounds: L.LatLngBounds) => {
+      currentBounds.current = bounds;
+      fetchProperties(bounds);
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 relative">
       <h1 className="sr-only">Explorador de Oportunidades Inmobiliarias</h1>
-      {/* Search/Filter Overlay could go here */}
       
       {/* Property Count Overlay */}
-      <div className="absolute top-4 right-4 z-[400] bg-white/95 backdrop-blur-sm shadow-md rounded-full px-4 py-2 text-sm font-bold text-gray-800 border border-gray-200 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-        {properties.length} propiedades en venta
+      <div className="absolute top-4 right-4 z-[400] flex flex-col items-end gap-2">
+        <div className="bg-white/95 backdrop-blur-sm shadow-md rounded-full px-4 py-2 text-sm font-bold text-gray-800 border border-gray-200 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isFetching ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+            {properties.length} {filter === 'market' ? 'propiedades en mercado' : filter === 'sale' ? 'mis propiedades en venta' : 'mis análisis de inversión'}
+        </div>
       </div>
+
+      {/* Filter Bar (Only for logged in users) */}
+      <AnimatePresence>
+      {user && (
+        <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[400] bg-white/90 backdrop-blur-md p-1.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-1"
+        >
+            <button 
+                onClick={() => setFilter('market')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all ${filter === 'market' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100'}`}
+            >
+                <LayoutGrid size={14} />
+                Mercado
+            </button>
+            <div className="w-px h-6 bg-gray-200 mx-1" />
+            <button 
+                onClick={() => setFilter('sale')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all ${filter === 'sale' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100'}`}
+            >
+                <Home size={14} />
+                Mis Ventas
+            </button>
+            <button 
+                onClick={() => setFilter('investment')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all ${filter === 'investment' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100'}`}
+            >
+                <TrendingUp size={14} />
+                Mis Análisis
+            </button>
+        </motion.div>
+      )}
+      </AnimatePresence>
 
       {/* Map Container */}
       <div className="flex-1 w-full h-full relative isolate">
-        {loading ? (
-             <div className="h-full w-full flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-             </div>
-        ) : (
-             <PropertiesMap properties={properties as any} user={user} /> 
-        )}
+        <PropertiesMap 
+          properties={properties as any} 
+          user={user} 
+          onBoundsChange={handleBoundsChange} 
+        /> 
       </div>
     </div>
   );

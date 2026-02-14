@@ -1,13 +1,17 @@
 'use client';
 import { motion } from 'framer-motion';
-import { Check, DollarSign, Home, ShieldAlert } from 'lucide-react';
+import { Check, DollarSign, Home, ShieldAlert, User as UserIcon } from 'lucide-react';
 
-export default function CalculatorStepper({ step }: { step: number }) {
+export default function CalculatorStepper({ step, purpose = 'investment' }: { step: number, purpose?: 'sale' | 'investment' }) {
   const steps = [
-    { id: 1, label: "Básico & Yield", icon: DollarSign },
+    { id: 1, label: "Básico", icon: DollarSign },
     { id: 2, label: "Detalles Físicos", icon: Home },
     { id: 3, label: "Riesgo Legal", icon: ShieldAlert },
   ];
+
+  if (purpose === 'investment') {
+    steps.push({ id: 4, label: "Contacto", icon: UserIcon });
+  }
 
   return (
     <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 mb-8 w-full relative overflow-hidden">
@@ -15,8 +19,7 @@ export default function CalculatorStepper({ step }: { step: number }) {
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
         <div className="relative z-10">
-            <h2 className="text-xl font-extrabold text-gray-900 mb-6 text-center tracking-tight">Análisis de Inversión</h2>
-            
+           
             <div className="flex justify-between items-center relative max-w-3xl mx-auto px-4">
                 
                 {/* Connecting Line Container */}

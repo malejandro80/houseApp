@@ -26,6 +26,7 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
 - **Strict Validation:** Use **Zod** to validate all input data in Server Actions before processing.
 - **Error Handling:** Use a consistent result object pattern: `{ data: T | null, error: string | null }`.
 - **TypeScript:** Use interfaces for data structures. Always use generated types from Supabase (`Database['public']['Tables'][...]`).
+- **PGRST Schema Sync:** If you encounter a 'column not found' error (PGRST204) after a database change, you must inform the user to manually reload the schema cache in the Supabase Dashboard SQL Editor using: `NOTIFY pgrst, 'reload schema';`.
 
 ## 🔒 Security & Auth
 - **Session Verification:** Always verify the user session using `supabase.auth.getUser()` in every Server Action or Protected Route.
@@ -42,4 +43,5 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
 - Authentication/Authorization checks are performed.
 - All database interactions use TypeScript types generated from the schema.
 - Errors are caught and returned in a format the Frontend Agent can display.
+- PGRST cache is verified if schema errors occur.
 - The action/route follows the `/src` directory structure.

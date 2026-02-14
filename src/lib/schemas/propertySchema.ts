@@ -12,30 +12,30 @@ const baseSchema = z.object({
   areaTotal: z.coerce.number().min(1, 'Área total requerida'),
   areaBuilt: z.coerce.number().min(0).default(0),
   address: z.string().min(5, 'Dirección requerida'),
-  neighborhood: z.string().optional(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
+  neighborhood: z.string().nullable().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
   age: z.coerce.number().min(0).default(0),
-  stratum: z.coerce.number().min(1).max(6).default(3),
+  physicalCondition: z.coerce.number().min(1).max(5).default(3),
 });
 
 // Specific fields (all optional, validated conditionally)
 const detailsSchema = z.object({
-  rooms: z.coerce.number().optional(),
-  bathrooms: z.coerce.number().optional(),
-  parking: z.coerce.number().optional(),
-  amenities: z.array(z.string()).optional(),
+  rooms: z.coerce.number().nullable().optional(),
+  bathrooms: z.coerce.number().nullable().optional(),
+  parking: z.coerce.number().nullable().optional(),
+  amenities: z.array(z.string()).nullable().optional(),
   
-  landUse: z.string().optional(), // Residential, Commercial, Industrial
-  topography: z.string().optional(), // Flat, Sloped
+  landUse: z.string().nullable().optional(), // Residential, Commercial, Industrial
+  topography: z.string().nullable().optional(), // Flat, Sloped
   
-  frontage: z.coerce.number().optional(),
-  footTraffic: z.enum(['high', 'medium', 'low']).optional(),
+  frontage: z.coerce.number().nullable().optional(),
+  footTraffic: z.enum(['high', 'medium', 'low']).nullable().optional(),
   
-  floorResistance: z.coerce.number().optional(), // Ton/m2
-  ceilingHeight: z.coerce.number().optional(),
-  loadingDocks: z.coerce.number().optional(),
-  power: z.coerce.number().optional(), // kVA
+  floorResistance: z.coerce.number().nullable().optional(), // Ton/m2
+  ceilingHeight: z.coerce.number().nullable().optional(),
+  loadingDocks: z.coerce.number().nullable().optional(),
+  power: z.coerce.number().nullable().optional(), // kVA
 });
 
 // Risk fields
@@ -48,7 +48,14 @@ const riskSchema = z.object({
   acceptedListingTerms: z.boolean().default(false),
 });
 
+// Contact fields
+const contactSchema = z.object({
+  ownerName: z.string().nullable().optional(),
+  ownerPhone: z.string().nullable().optional(),
+  ownerEmail: z.string().email('Email inválido').nullable().optional().or(z.literal('').nullable()).or(z.literal('')),
+});
+
 // Combined schema
-export const propertyFormSchema = baseSchema.merge(detailsSchema).merge(riskSchema);
+export const propertyFormSchema = baseSchema.merge(detailsSchema).merge(riskSchema).merge(contactSchema);
 
 export type PropertyFormData = z.infer<typeof propertyFormSchema>;

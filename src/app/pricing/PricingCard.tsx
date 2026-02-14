@@ -5,6 +5,8 @@ import { subscribeToPlan } from '@/app/actions/payment';
 import { Loader2, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { toast } from 'sonner';
+
 export default function PricingCard({ currentPlan }: { currentPlan: string | null }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -19,13 +21,14 @@ export default function PricingCard({ currentPlan }: { currentPlan: string | nul
       
       const result = await subscribeToPlan('seller_basic');
       if (result.error) {
-        alert(result.error);
+        toast.error(result.error);
       } else {
+        toast.success('¡Suscripción exitosa!');
         router.push('/my-properties');
       }
     } catch (error) {
       console.error(error);
-      alert('Error en el proceso de pago.');
+      toast.error('Error en el proceso de pago.');
     } finally {
       setLoading(false);
     }

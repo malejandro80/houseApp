@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -16,8 +16,8 @@ L.Icon.Default.mergeOptions({
 
 type LocationPickerProps = {
   onLocationSelect: (lat: number, lng: number) => void;
-  initialLat?: number;
-  initialLng?: number;
+  initialLat?: number | null;
+  initialLng?: number | null;
 };
 
 // Internal component to handle map flyTo effects and clicks
@@ -42,10 +42,14 @@ function MapController({
     },
   });
 
-  // Trigger location search on mount
-  useState(() => {
-    map.locate();
-  });
+  useEffect(() => {
+    // Only auto-locate if no initial position was provided
+    if (!position) {
+      map.locate();
+    } else {
+      map.flyTo(position, 16);
+    }
+  }, [map, position]);
 
   return position === null ? null : (
     <Marker position={position} />
@@ -56,6 +60,12 @@ export default function LocationPicker({ onLocationSelect, initialLat, initialLn
   const [position, setPosition] = useState<L.LatLng | null>(
     initialLat && initialLng ? new L.LatLng(initialLat, initialLng) : null
   );
+
+  useEffect(() => {
+    if (initialLat && initialLng) {
+      setPosition(new L.LatLng(initialLat, initialLng));
+    }
+  }, [initialLat, initialLng]);
 
   // Default center (Fallback: Mexico City)
   const defaultCenter = [19.4326, -99.1332] as L.LatLngExpression;

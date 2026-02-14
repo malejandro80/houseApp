@@ -68,7 +68,7 @@ export default async function Home() {
                   href="/calculator"
                   className="inline-flex items-center justify-center px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-xl hover:bg-blue-700 hover:scale-105 hover:shadow-2xl transition-all duration-300 group"
                 >
-                  Ir a Calculadora
+                  Agregar Propiedad
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
                 </Link>
                 <Link 
