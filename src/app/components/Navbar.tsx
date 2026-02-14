@@ -8,24 +8,24 @@ export default async function Navbar() {
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50">
+    <nav className="sticky top-0 z-[60] w-full bg-white/70 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <div className="flex items-center gap-4 md:gap-8">
-            {/* Mobile Menu Toggle (Left on mobile?) or Right? Let's put it right with user menu */}
-             
-            <Link href="/" className="text-xl font-bold text-indigo-600 hover:text-indigo-700 transition-colors flex items-center gap-2">
-              <span className="bg-indigo-600 text-white p-1 rounded-md text-sm font-extrabold h-8 w-8 flex items-center justify-center">HA</span>
-              <span className="hidden sm:inline">HouseApp</span>
+        <div className="h-16 flex justify-between items-center">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-3 group translate-y-[-1px]">
+              <div className="bg-slate-900 text-white rounded-xl h-10 w-10 flex items-center justify-center font-black text-sm shadow-lg shadow-slate-900/20 group-hover:scale-110 transition-transform duration-300">
+                HA
+              </div>
+              <div className="flex flex-col">
+                <span className="text-base font-black text-slate-900 tracking-tighter leading-none group-hover:text-indigo-600 transition-colors">HouseApp</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block mt-1">Real Estate Engine</span>
+              </div>
             </Link>
-            
-            {/* Desktop Nav - Removed in favor of Side Nav */}
-            <div className="hidden md:block" />
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <UserMenu user={user} />
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center">
                 <MobileMenu user={user} />
             </div>
           </div>

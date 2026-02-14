@@ -22,6 +22,7 @@ type Property = {
   sale_price: number;
   rent_price: number;
   cover_image?: string | null;
+  user_id?: string | null;
   assigned_advisor_id?: string | null; 
   assigned_advisor?: {
     full_name: string | null;
@@ -311,35 +312,47 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                     {/* Contact / Detail Action - ONLY FOR SALES */}
                     {!isInvestment && (
                         user ? (
-                             <div className="mt-4 pt-4 border-t border-gray-100">
-                                 <div className="flex items-center gap-2 mb-3 px-1">
-                                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-700 border border-blue-200 uppercase">
-                                        {property.assigned_advisor?.full_name?.[0] || 'A'}
+                            user.id === property.user_id ? (
+                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <Link 
+                                        href={`/my-properties/${property.id}/edit`}
+                                        className="w-full py-3 bg-gray-900 hover:bg-black !text-white rounded-2xl text-xs font-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        Gestionar Propiedad
+                                        <ArrowRight size={14} />
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <div className="flex items-center gap-2 mb-3 px-1">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-700 border border-blue-200 uppercase">
+                                            {property.assigned_advisor?.full_name?.[0] || 'A'}
+                                        </div>
+                                        <p className="text-[10px] text-gray-600 font-medium">
+                                            Asesor: <span className="font-bold text-gray-900">{property.assigned_advisor?.full_name?.split(' ')[0] || 'Experto Local'}</span>
+                                        </p>
                                     </div>
-                                    <p className="text-[10px] text-gray-600 font-medium">
-                                        Asesor: <span className="font-bold text-gray-900">{property.assigned_advisor?.full_name?.split(' ')[0] || 'Experto Local'}</span>
-                                    </p>
-                                 </div>
-                                 <div className="flex flex-col gap-2">
-                                     <button
-                                        onClick={() => handleContactAdvisor(property.id, property.assigned_advisor_id)}
-                                        disabled={contactingId === property.id}
-                                        className="w-full py-3 bg-blue-700 hover:bg-blue-800 !text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-2"
-                                        aria-label="Consultar Disponibilidad"
-                                     >
-                                        {contactingId === property.id ? <Loader2 className="animate-spin w-4 h-4" /> : <Mail className="w-4 h-4" />}
-                                        Consultar Disponibilidad
-                                     </button>
-                                     <button
-                                        onClick={() => window.open('https://www.bbva.com.mx/personas/productos/creditos/credito-hipotecario/simulador-credito-hipotecario.html', '_blank')}
-                                        className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl text-xs font-black hover:bg-gray-50 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
-                                        aria-label="Simular Crédito Hipotecario"
-                                     >
-                                        <Target size={14} className="text-emerald-500" />
-                                        Simular Crédito
-                                     </button>
-                                 </div>
-                             </div>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => handleContactAdvisor(property.id, property.assigned_advisor_id)}
+                                            disabled={contactingId === property.id}
+                                            className="w-full py-3 bg-blue-700 hover:bg-blue-800 !text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-2"
+                                            aria-label="Consultar Disponibilidad"
+                                        >
+                                            {contactingId === property.id ? <Loader2 className="animate-spin w-4 h-4" /> : <Mail className="w-4 h-4" />}
+                                            Consultar Disponibilidad
+                                        </button>
+                                        <button
+                                            onClick={() => window.open('https://www.bbva.com.mx/personas/productos/creditos/credito-hipotecario/simulador-credito-hipotecario.html', '_blank')}
+                                            className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl text-xs font-black hover:bg-gray-50 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
+                                            aria-label="Simular Crédito Hipotecario"
+                                        >
+                                            <Target size={14} className="text-emerald-500" />
+                                            Simular Crédito
+                                        </button>
+                                    </div>
+                                </div>
+                            )
                         ) : (
                             <div className="mt-4 pt-4 border-t border-gray-100">
                                 <p className="text-[11px] text-gray-600 mb-4 font-bold text-center leading-relaxed">

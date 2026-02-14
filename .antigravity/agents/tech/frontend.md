@@ -39,10 +39,10 @@ You are a specialized agent focused on building high-performance, accessible, an
 
 
 ## 🎨 UI & Styling Protocols
-- **Shadcn UI:** Use as the base for all primitive components.
+- **Design System:** Strictly follow [DESIGN_SYSTEM.md](/.antigravity/DESIGN_SYSTEM.md). Use provided tokens for colors (`slate-900`, `indigo-600`, `emerald-600`).
 - **Tailwind:** Follow a strict mobile-first responsive approach.
 - **Framer Motion:** Use for declarative animations to enhance UX without compromising performance.
-- **Typography & Contrast:** All inputs and labels must use high-contrast text (`text-gray-900` or equivalent) for readability. Avoid light grays for essential text.
+- **Typography & Contrast:** All inputs and labels must use high-contrast text (`text-slate-900`) for readability. Use `Inter` font.
 
 ## ⚡️ Framer Motion & DOM Safety
 - **AnimatePresence + Step Forms:** When using `AnimatePresence` for multi-step forms, wrap each step's content in an individual `motion.div` with a unique `key` (e.g., `{step === 1 && <motion.div key="1">...}`). 

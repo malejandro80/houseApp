@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="es" style={{ colorScheme: 'light' }}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 min-h-screen text-gray-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 min-h-screen text-slate-900`}
       >
         <Toaster position="bottom-right" richColors />
         <Navbar />

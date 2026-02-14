@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
-import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon } from 'lucide-react';
+import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon, MoreVertical, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -43,7 +43,9 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
   const [sortBy, setSortBy] = useState<'profitability' | 'created_at' | 'sale_price' | 'price_m2'>('profitability');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterPurpose, setFilterPurpose] = useState<string>('all');
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
   const supabase = createClient();
   const router = useRouter();
@@ -69,6 +71,10 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
         query = query.eq('type', filterType);
       }
 
+      if (filterPurpose !== 'all') {
+        query = query.eq('purpose', filterPurpose);
+      }
+
       const { data, count, error } = await query
         .order(sortBy === 'price_m2' ? 'sale_price' : sortBy, { ascending: sortOrder === 'asc' })
         .range(from, to);
@@ -83,7 +89,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
     };
 
     fetchProperties();
-  }, [userId, supabase, page, sortBy, sortOrder, filterType]);
+  }, [userId, supabase, page, sortBy, sortOrder, filterType, filterPurpose]);
 
   const handlePublish = async (propertyId: string) => {
     setPublishingId(propertyId);
@@ -152,25 +158,45 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
       <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           
-          {/* Left: Filter */}
-          <div className="relative w-full sm:w-64 group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Filter className="h-4 w-4 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+          {/* Left: Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="relative group w-full sm:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Filter className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+              </div>
+              <select 
+                className="block w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:bg-white cursor-pointer appearance-none uppercase tracking-tight"
+                value={filterType}
+                onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+              >
+                <option value="all">Tipo de Propiedad</option>
+                <option value="house">Casas</option>
+                <option value="apartment">Apartamentos</option>
+                <option value="land">Lotes / Terrenos</option>
+                <option value="commercial">Locales Comerciales</option>
+                <option value="warehouse">Bodegas</option>
+              </select>
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ChevronRight size={12} className="text-slate-400 rotate-90" />
+              </div>
             </div>
-            <select 
-              className="block w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:bg-white cursor-pointer appearance-none"
-              value={filterType}
-              onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
-            >
-              <option value="all">Todas las propiedades</option>
-              <option value="house">Casas</option>
-              <option value="apartment">Apartamentos</option>
-              <option value="land">Lotes / Terrenos</option>
-              <option value="commercial">Locales Comerciales</option>
-              <option value="warehouse">Bodegas</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <ChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+
+            <div className="relative group w-full sm:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Target className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+              </div>
+              <select 
+                className="block w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:bg-white cursor-pointer appearance-none uppercase tracking-tight"
+                value={filterPurpose}
+                onChange={(e) => { setFilterPurpose(e.target.value); setPage(1); }}
+              >
+                <option value="all">Propósito</option>
+                <option value="sale">En Venta</option>
+                <option value="investment">Para Inversión</option>
+              </select>
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ChevronRight size={12} className="text-slate-400 rotate-90" />
+              </div>
             </div>
           </div>
 
@@ -205,16 +231,17 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
-        <table className="min-w-full divide-y divide-gray-200 bg-white">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+        <table className="min-w-full divide-y divide-slate-200 bg-white">
+          <thead className="bg-slate-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Propiedad</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Ubicación</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Registrado</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Precio Venta</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Alquiler Est.</th>
-              <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Rentabilidad</th>
+              <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Propiedad</th>
+              <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Ubicación</th>
+              <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Registrado</th>
+              <th scope="col" className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Precio Venta</th>
+              <th scope="col" className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Alquiler Est.</th>
+              <th scope="col" className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Rentabilidad</th>
+              <th scope="col" className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap min-w-[120px]">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -281,43 +308,12 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                                 >
                                     {publishingId === property.id ? '...' : (
                                         <>
-                                    {property.purpose === 'sale' ? 'Publicar Ahora' : 'Vender con Éxito'}
+                                    {property.purpose === 'sale' ? 'venta' : 'Inversion'}
                                 </>
                             )}
                         </button>
                              </div>
                         )}
-                        
-                        {/* Edit / Delete Actions */}
-                        <div className="mt-2 flex items-center gap-2">
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    router.push(`/my-properties/${property.id}/edit`);
-                                }}
-                                className="text-gray-400 hover:text-blue-600 transition-colors p-1"
-                                title="Editar"
-                            >
-                                <Edit2 size={14} />
-                            </button>
-                            <button 
-                                onClick={async (e) => {
-                                    e.stopPropagation();
-                                    if(confirm('¿Estás seguro de eliminar esta propiedad?')) {
-                                        await deleteProperty(property.id);
-                                        // Simple reload or state update. Since it's server action with revalidatePath, 
-                                        // router.refresh() might be needed or just refetch.
-                                        // For now let's use window.location.reload() to be sure or filter local state
-                                        setProperties(prev => prev.filter(p => p.id !== property.id));
-                                    }
-                                }}
-                                className="text-gray-400 hover:text-red-600 transition-colors p-1"
-                                title="Eliminar"
-                            >
-                                <Trash2 size={14} />
-                            </button>
-                        </div>
-
                       </div>
                     </div>
                   </td>
@@ -358,6 +354,71 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                             >
                                 <span className="animate-pulse">💎</span> Oportunidad Top
                             </motion.span>
+                        )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="relative inline-block text-left">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === property.id ? null : property.id);
+                            }}
+                            className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all border border-transparent hover:border-slate-200 shadow-sm hover:shadow-md"
+                        >
+                            <MoreVertical size={16} />
+                        </button>
+                        
+                        {openMenuId === property.id && (
+                            <>
+                                <div 
+                                    className="fixed inset-0 z-10" 
+                                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }}
+                                />
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl z-20 py-2 overflow-hidden"
+                                >
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/my-properties/${property.id}`);
+                                            setOpenMenuId(null);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <ExternalLink size={16} className="text-slate-400" />
+                                        Ver Detalles
+                                    </button>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/my-properties/${property.id}/edit`);
+                                            setOpenMenuId(null);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <Edit2 size={16} className="text-slate-400" />
+                                        Editar Propiedad
+                                    </button>
+                                    <div className="h-px bg-slate-100 my-1 mx-2"></div>
+                                    <button 
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if(confirm('¿Estás seguro de eliminar esta propiedad?')) {
+                                                await deleteProperty(property.id);
+                                                setProperties(prev => prev.filter(p => p.id !== property.id));
+                                                setOpenMenuId(null);
+                                            }
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                        <Trash2 size={16} className="text-red-400" />
+                                        Eliminar
+                                    </button>
+                                </motion.div>
+                            </>
                         )}
                     </div>
                   </td>

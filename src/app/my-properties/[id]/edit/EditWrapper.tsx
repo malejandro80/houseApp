@@ -20,7 +20,7 @@ export default function EditWrapper({ user, property }: { user: User, property: 
             <div>
               <h1 className="text-3xl font-black text-gray-900 tracking-tight">Editar Propiedad</h1>
               <p className="text-gray-500 mt-2 font-medium">
-                {purpose === 'investment' ? 'Actualizando análisis de inversión.' : 'Actualizando publicación de venta.'}
+                {purpose === 'investment' ? 'Actualizando evaluación de inversión.' : 'Actualizando publicación de venta.'}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -29,23 +29,23 @@ export default function EditWrapper({ user, property }: { user: User, property: 
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Propósito</span>
                     <div className="bg-gray-100/80 backdrop-blur-sm p-1 rounded-xl flex items-center relative border border-gray-200/50 shadow-inner">
                         <button 
-                            onClick={() => setPurpose('sale')}
-                            className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${purpose === 'sale' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            Venta
-                        </button>
-                        <button 
                             onClick={() => setPurpose('investment')}
                             className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${purpose === 'investment' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
                         >
                             Inversión
+                        </button>
+                        <button 
+                            onClick={() => setPurpose('sale')}
+                            className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${purpose === 'sale' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Venta
                         </button>
                         
                         {/* Active Background Pill */}
                         <motion.div 
                             layoutId="activePillEdit"
                             initial={false}
-                            animate={{ x: purpose === 'sale' ? 0 : '100.5%' }}
+                            animate={{ x: purpose === 'investment' ? 0 : '100.5%' }}
                             transition={{ type: "spring", stiffness: 400, damping: 30 }}
                             className="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-gray-900 rounded-lg shadow-md border border-white/10"
                         />
