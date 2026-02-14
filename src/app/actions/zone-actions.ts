@@ -109,10 +109,15 @@ export async function createZone(name: string, lat: number, lon: number, radius:
 export async function deleteZone(id: number) {
   const supabase = await createClient();
   
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  // SECURE DELETE: Explicitly check user_id if RLS is not enough or to be safe
   const { error } = await supabase
     .from('zones')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
 
   if (error) {
     console.error('Error deleting zone:', error);

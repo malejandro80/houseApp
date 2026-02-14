@@ -2,14 +2,33 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
-export async function publishProperty(propertyId: number) {
+// Schema for updating properties (Whitelist)
+const updatePropertySchema = z.object({
+    title: z.string().min(3).optional(),
+    type: z.string().optional(),
+    address: z.string().optional(),
+    sale_price: z.number().positive().optional(),
+    rent_price: z.number().positive().optional(),
+    lat: z.number().optional(),
+    lon: z.number().optional(),
+    area_total: z.number().positive().optional(),
+    business_status: z.string().optional(),
+    cover_image: z.string().url().optional().or(z.literal('')),
+    // specifically NOT allowing user_id, is_listed, or assigned_advisor_id here
+});
+
+export async function publishProperty(propertyId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return { error: 'Unauthorized' };
   }
+
+  // Validate propertyId
+  if (!propertyId) return { error: 'Invalid ID' };
 
   // 1. Check Subscription
   const { data: subscription } = await supabase
@@ -45,7 +64,7 @@ export async function publishProperty(propertyId: number) {
   return { success: true };
 }
 
-export async function deleteProperty(propertyId: number) {
+export async function deleteProperty(propertyId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -68,19 +87,30 @@ export async function deleteProperty(propertyId: number) {
   return { success: true };
 }
 
-export async function updateProperty(propertyId: number, data: any) {
+export async function updateProperty(propertyId: string, data: any) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
   
     if (!user) {
       return { error: 'Unauthorized' };
     }
+
+    // 1. Validate Input (Whitelist allowed fields)
+    const result = updatePropertySchema.safeParse(data);
+    if (!result.success) {
+        return { error: 'Invalid data: ' + result.error.issues.map(i => i.message).join(', ') };
+    }
   
-    // Clean up data if necessary (remove undefined)
+    // 2. Clean up (remove undefined)
     const updateData = Object.fromEntries(
-        Object.entries(data).filter(([_, v]) => v !== undefined)
+        Object.entries(result.data).filter(([_, v]) => v !== undefined)
     );
 
+    if (Object.keys(updateData).length === 0) {
+        return { error: 'No valid fields provided for update' };
+    }
+
+    // 3. SECURE UPDATE: Ensure user_id matches
     const { error } = await supabase
       .from('properties')
       .update(updateData)

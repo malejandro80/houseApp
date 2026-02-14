@@ -56,10 +56,10 @@ export default function PropertyForm({
       age: initialData.age,
       stratum: initialData.stratum,
       
-      // Metadata
-      rooms: initialData.metadata?.rooms,
-      bathrooms: initialData.metadata?.bathrooms,
-      parking: initialData.metadata?.parking,
+      // Top level columns (previously in metadata)
+      rooms: initialData.bedrooms,
+      bathrooms: initialData.bathrooms,
+      parking: initialData.parking,
       amenities: initialData.metadata?.amenities,
       landUse: initialData.metadata?.land_use,
       topography: initialData.metadata?.topography,
@@ -82,7 +82,8 @@ export default function PropertyForm({
       legalStatus: 'deed_ready',
       riskZone: false,
       roadAffectation: false,
-      heritage: false
+      heritage: false,
+      acceptedListingTerms: initialData?.accepted_listing_terms || false
     }
   });
 
@@ -166,12 +167,12 @@ export default function PropertyForm({
                 lon: data.longitude,
                 age: data.age,
                 stratum: data.stratum,
+                bedrooms: data.rooms,
+                bathrooms: data.bathrooms,
+                parking: data.parking,
                 
                 // Metadata
                 metadata: {
-                    rooms: data.rooms,
-                    bathrooms: data.bathrooms,
-                    parking: data.parking,
                     amenities: data.amenities,
                     land_use: data.landUse,
                     topography: data.topography,
@@ -191,7 +192,7 @@ export default function PropertyForm({
                     tax_debt: data.taxDebt,
                     heritage: data.heritage
                 },
-                
+                accepted_listing_terms: data.acceptedListingTerms,
                 images: finalImages,
                 cover_image: finalImages[0] || null
             };
@@ -220,12 +221,12 @@ export default function PropertyForm({
                 stratum: data.stratum,
                 purpose: purpose, 
                 is_listed: false,
+                bedrooms: data.rooms,
+                bathrooms: data.bathrooms,
+                parking: data.parking,
                 
                 // Metadata
                 metadata: {
-                    rooms: data.rooms,
-                    bathrooms: data.bathrooms,
-                    parking: data.parking,
                     amenities: data.amenities,
                     land_use: data.landUse,
                     topography: data.topography,
@@ -245,7 +246,7 @@ export default function PropertyForm({
                     tax_debt: data.taxDebt,
                     heritage: data.heritage
                 },
-                
+                accepted_listing_terms: data.acceptedListingTerms,
                 images: finalImages,
                 cover_image: finalImages[0] || null
             });
@@ -542,6 +543,31 @@ export default function PropertyForm({
                                     <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none" />
                                 )}
                             />
+                        </div>
+
+                        <div className="pt-6 border-t border-gray-100">
+                            <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 mb-4">
+                                <h4 className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <CheckCircle size={14} /> Términos de Publicación
+                                </h4>
+                                <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                                    Al publicar esta propiedad, certificas que la información es verídica y que tienes autorización legal para promocionarla. HouseApp se reserva el derecho de verificar la documentación y remover anuncios que no cumplan con nuestras políticas de transparencia.
+                                </p>
+                            </div>
+                            <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer border-2 border-transparent hover:border-blue-200 transition-all group">
+                                <div className="mt-0.5">
+                                    <input 
+                                        type="checkbox" 
+                                        {...register('acceptedListingTerms')} 
+                                        className="w-5 h-5 text-blue-600 rounded-md border-gray-300 focus:ring-blue-500" 
+                                    />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-bold text-gray-800 group-hover:text-blue-700 transition-colors">Acepto los términos y condiciones de publicación</span>
+                                    <p className="text-[10px] text-gray-500 mt-1">Habilita la visibilidad en el mapa público y permite que otros usuarios te contacten.</p>
+                                </div>
+                            </label>
+                            {errors.acceptedListingTerms && <p className="text-red-500 text-xs mt-1">{errors.acceptedListingTerms.message}</p>}
                         </div>
                     </div>
                 </motion.div>

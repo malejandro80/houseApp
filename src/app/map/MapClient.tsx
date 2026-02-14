@@ -51,16 +51,21 @@ export default function MapClient({ user }: { user: User | null }) {
         // Filter logic:
         // Public: is_listed = true
         // Logged in: is_listed = true OR user_id = my_id
+        console.log('aquí1');
         
         if (user) {
             // Logged in: is_listed (Public Sales) OR my properties (Investments, drafts)
             query = query.or(`is_listed.eq.true,user_id.eq.${user.id}`);
+            console.log('aquí');
         } else {
             // Public: Only listed properties (which are by definition 'sale')
             query = query.eq('is_listed', true);
+            console.log('aquí2');
         }
 
+        console.log(query,'aquí3');
         const { data, error } = await query;
+
 
         if (error) {
           console.error('Error fetching properties:', error);
@@ -79,10 +84,11 @@ export default function MapClient({ user }: { user: User | null }) {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 relative">
+      <h1 className="sr-only">Explorador de Oportunidades Inmobiliarias</h1>
       {/* Search/Filter Overlay could go here */}
       
       {/* Property Count Overlay */}
-      <div className="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur-sm shadow-md rounded-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 flex items-center gap-2">
+      <div className="absolute top-4 right-4 z-[400] bg-white/95 backdrop-blur-sm shadow-md rounded-full px-4 py-2 text-sm font-bold text-gray-800 border border-gray-200 flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
         {properties.length} propiedades en venta
       </div>

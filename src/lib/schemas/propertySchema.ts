@@ -45,6 +45,7 @@ const riskSchema = z.object({
   roadAffectation: z.boolean().default(false),
   taxDebt: z.coerce.number().default(0),
   heritage: z.boolean().default(false),
+  acceptedListingTerms: z.boolean().default(false),
 });
 
 // Combined schema

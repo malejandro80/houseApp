@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
-import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2 } from 'lucide-react';
+import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -12,7 +12,7 @@ import { es } from 'date-fns/locale';
 import { publishProperty, deleteProperty } from '@/app/actions/property';
 
 interface SavedProperty {
-  id: number;
+  id: string;
   title: string | null;
   address: string;
   type: string;
@@ -23,6 +23,8 @@ interface SavedProperty {
   created_at: string;
   cover_image: string | null;
   is_listed: boolean;
+  area_total: number;
+  area_built: number;
   assigned_advisor_id: string | null;
   assigned_advisor?: {
     full_name: string | null;
@@ -37,10 +39,10 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [sortBy, setSortBy] = useState<'profitability' | 'created_at' | 'sale_price'>('profitability');
+  const [sortBy, setSortBy] = useState<'profitability' | 'created_at' | 'sale_price' | 'price_m2'>('profitability');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<string>('all');
-  const [publishingId, setPublishingId] = useState<number | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
   
   const supabase = createClient();
   const router = useRouter();
@@ -67,7 +69,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
       }
 
       const { data, count, error } = await query
-        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .order(sortBy === 'price_m2' ? 'sale_price' : sortBy, { ascending: sortOrder === 'asc' })
         .range(from, to);
 
       if (error) {
@@ -82,7 +84,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
     fetchProperties();
   }, [userId, supabase, page, sortBy, sortOrder, filterType]);
 
-  const handlePublish = async (propertyId: number) => {
+  const handlePublish = async (propertyId: string) => {
     setPublishingId(propertyId);
     try {
         const result = await publishProperty(propertyId);
@@ -110,11 +112,36 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
 
   if (!loading && properties.length === 0) {
     return (
-      <div className="text-center p-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-        <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-sm font-semibold text-gray-900">No hay propiedades guardadas</h3>
-        <p className="mt-1 text-sm text-gray-500">Comienza a buscar y guardar propiedades para verlas aquí.</p>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center p-12 bg-white rounded-3xl border border-gray-100 shadow-2xl relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Target className="h-10 w-10 text-blue-600 animate-pulse" />
+        </div>
+        <h3 className="text-2xl font-black text-gray-900 mb-2">Tu portafolio comienza aquí</h3>
+        <p className="text-gray-700 max-w-md mx-auto mb-8 font-bold">
+            Analiza tu primera inversión o publica tu propiedad para encontrar al comprador ideal. HouseApp te guía en cada paso.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+                onClick={() => router.push('/calculator')}
+                className="inline-flex items-center justify-center px-8 py-4 bg-blue-700 !text-white font-black rounded-2xl hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+            >
+                <TrendingUp className="mr-2 h-5 w-5" />
+                Analizar Inversión
+            </button>
+            <button 
+                onClick={() => router.push('/map')}
+                className="inline-flex items-center justify-center px-8 py-4 bg-white text-gray-700 font-bold rounded-2xl border border-gray-200 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+            >
+                <MapIcon className="mr-2 h-5 w-5" />
+                Explorar el Mercado
+            </button>
+        </div>
+      </motion.div>
     );
   }
 
@@ -159,6 +186,7 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                       <option value="profitability">Mayor Rentabilidad</option>
                       <option value="created_at">Más Recientes</option>
                       <option value="sale_price">Precio de Venta</option>
+                      <option value="price_m2">Precio por m²</option>
                   </select>
                   
                   <div className="w-px h-6 bg-gray-300 mx-1"></div>
@@ -180,12 +208,12 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
         <table className="min-w-full divide-y divide-gray-200 bg-white">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Propiedad</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registrado</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Venta</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Alquiler Est.</th>
-              <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Rentabilidad</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Propiedad</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Ubicación</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Registrado</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Precio Venta</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Alquiler Est.</th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Rentabilidad</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -252,11 +280,10 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                                 >
                                     {publishingId === property.id ? '...' : (
                                         <>
-                                            <DollarSign size={10} /> 
-                                            {property.purpose === 'sale' ? 'Publicar' : 'Vender'}
-                                        </>
-                                    )}
-                                </button>
+                                    {property.purpose === 'sale' ? 'Publicar Ahora' : 'Vender con Éxito'}
+                                </>
+                            )}
+                        </button>
                              </div>
                         )}
                         
@@ -294,8 +321,8 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                    <div className="flex items-center text-sm text-gray-700">
+                      <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-500" aria-hidden="true" />
                       <span className="truncate max-w-[150px]">{property.address}</span>
                     </div>
                   </td>
@@ -306,16 +333,32 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                    ${property.sale_price.toLocaleString()}
+                    <div>
+                        ${property.sale_price.toLocaleString()}
+                        <div className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">
+                            ${(property.sale_price / (property.area_total || property.area_built || 1)).toLocaleString(undefined, { maximumFractionDigits: 0 })}/m²
+                        </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     ${property.rent_price.toLocaleString()}/mes
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${healthStyle.bg} ${healthStyle.color} ${healthStyle.borderColor}`}>
-                      <TrendingUp className="mr-1 h-3 w-3" />
-                      {netReturn.toFixed(1)}% ({healthStyle.text})
-                    </span>
+                    <td className="px-6 py-4 whitespace-nowrap text-center cursor-pointer relative" onClick={() => router.push(`/my-properties/${property.id}`)}>
+                    <div className="flex flex-col items-center gap-1">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${healthStyle.bg} ${healthStyle.color} ${healthStyle.borderColor}`}>
+                        <TrendingUp className="mr-1 h-3 w-3" />
+                        {netReturn.toFixed(1)}% ({healthStyle.text})
+                        </span>
+                        {netReturn >= 10 && (
+                            <motion.span 
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 uppercase tracking-tighter flex items-center gap-1 shadow-sm shadow-amber-200/50"
+                            >
+                                <span className="animate-pulse">💎</span> Oportunidad Top
+                            </motion.span>
+                        )}
+                    </div>
                   </td>
                 </motion.tr>
               );

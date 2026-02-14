@@ -1,5 +1,8 @@
--- Create Purpose Enum
-CREATE TYPE public.property_purpose AS ENUM ('sale', 'investment');
+DO $$ BEGIN
+    CREATE TYPE public.property_purpose AS ENUM ('sale', 'investment');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Add Purpose Column
 ALTER TABLE public.properties

@@ -2,6 +2,13 @@
   "mcpServers": {
     "supabase": {
       "url": "https://mcp.supabase.com/mcp?project_ref=xbirlummltqnesuzdlov"
+    },
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-notion"],
+      "env": {
+        "NOTION_ACCESS_TOKEN": "YOUR_NOTION_TOKEN"
+      }
     }
   }
 }
