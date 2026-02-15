@@ -8,6 +8,9 @@ import { useState, useEffect } from 'react';
 import PropertyMapWrapper from '@/app/components/PropertyMapWrapper';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+import ContactAdvisorModal from '@/app/components/ContactAdvisorModal';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 interface PropertyDetail {
   id: string;
@@ -37,6 +40,8 @@ interface PropertyDetail {
     phone: string;
     email: string;
   } | null;
+  view_count: number;
+  assigned_advisor_id: string | null;
   assigned_advisor?: {
     full_name: string;
   } | null;
@@ -56,9 +61,59 @@ const PHYSICAL_CONDITION_LABELS: Record<number, { label: string, color: string, 
   5: { label: 'Propiedad nueva', color: 'text-blue-600', dot: 'bg-blue-600' }
 };
 
-export default function PropertyDetailClient({ property: p, user }: { property: PropertyDetail, user: SupabaseUser | null }) {
+export default function PropertyDetailClient({ 
+  property: p, 
+  user, 
+  userRole = 'usuario' 
+}: { 
+  property: PropertyDetail, 
+  user: SupabaseUser | null,
+  userRole?: string 
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isExpert = userRole === 'asesor' || userRole === 'superadmin';
+  const supabase = createClient();
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const isLightboxOpen = selectedImageIndex !== null;
+
+  // Auto-open modal if returning from login
+  useEffect(() => {
+    if (user && searchParams.get('contact') === 'true') {
+      setIsContactModalOpen(true);
+      // Clean up URL
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('contact');
+      const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [user, searchParams, pathname]);
+
+  const handleContactClick = () => {
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent(pathname + '?contact=true')}`);
+      return;
+    }
+    setIsContactModalOpen(true);
+  };
+
+  useEffect(() => {
+    const incrementView = async () => {
+      // Only increment if not owner and not advisor
+      if (p.isOwner || (p.assigned_advisor_id && user?.id === p.assigned_advisor_id)) {
+        return;
+      }
+
+      await supabase
+        .from('properties')
+        .update({ view_count: (p.view_count || 0) + 1 })
+        .eq('id', p.id);
+    };
+
+    incrementView();
+  }, [p.id, p.isOwner, p.assigned_advisor_id, user?.id, supabase]);
 
   const { netReturn, health } = calculateProfitabilityForList(p.sale_price, p.rent_price);
   const healthStyle = getHealthLabel(health);
@@ -149,11 +204,19 @@ export default function PropertyDetailClient({ property: p, user }: { property: 
                     <Pencil size={18} />
                     <span>Editar Propiedad</span>
                 </Link>
-            ) : (
-                <button className="flex items-center justify-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20 active:scale-95">
+            ) : !isExpert ? (
+                <button 
+                    onClick={handleContactClick}
+                    className="flex items-center justify-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
+                >
                     <Phone size={18} />
                     <span>Contactar Asesor</span>
                 </button>
+            ) : (
+                <div className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-slate-200">
+                    <BadgeCheck size={14} className="text-indigo-500" />
+                    Vista de Profesional
+                </div>
             )}
           </div>
         </div>
@@ -342,12 +405,12 @@ export default function PropertyDetailClient({ property: p, user }: { property: 
                     className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg"
                 >
                     <p className="text-blue-100 text-sm mb-1">Precio de Venta</p>
-                    <h3 className="text-3xl font-bold mb-6">${p.sale_price.toLocaleString()}</h3>
+                    <h3 className="text-3xl font-bold mb-6">${p.sale_price.toLocaleString('es-CO')}</h3>
                     
                     <div className="space-y-4">
                         <div className="flex items-center justify-between bg-white/10 p-3 rounded-lg backdrop-blur-sm">
                             <span className="flex items-center gap-2 text-sm"><DollarSign size={16}/> Alquiler Estimado</span>
-                            <span className="font-bold">${p.rent_price.toLocaleString()}/mes</span>
+                            <span className="font-bold">${p.rent_price.toLocaleString('es-CO')}/mes</span>
                         </div>
                         <div className={`flex items-center justify-between p-3 rounded-lg backdrop-blur-sm bg-white text-${healthStyle.color.split('-')[1]}-600`}>
                              <span className="flex items-center gap-2 text-sm font-medium">Retorno Neto Est.</span>
@@ -412,21 +475,24 @@ export default function PropertyDetailClient({ property: p, user }: { property: 
                 )}
 
                 {/* Advisor Card for public properties */}
-                {p.purpose === 'sale' && !p.isOwner && (
+                {p.purpose === 'sale' && !p.isOwner && !isExpert && (
                     <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100/50 text-center">
                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-indigo-100">
                             <User className="text-indigo-600" size={32} />
                          </div>
                          <h4 className="font-black text-slate-900 mb-1">{p.assigned_advisor?.full_name || 'Experto Local'}</h4>
                          <p className="text-xs text-indigo-600 font-bold uppercase tracking-widest mb-6 px-4">Asesor Asignado</p>
-                         <button className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-sm font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20 active:scale-95">
+                         <button 
+                            onClick={handleContactClick}
+                            className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-sm font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
+                         >
                             Contactar Asesor
                          </button>
                     </div>
                 )}
 
                 <div className="text-xs text-center text-gray-400">
-                    Agregado el {new Date(p.created_at).toLocaleDateString()}
+                    Agregado el {new Date(p.created_at).toLocaleDateString('es-CO')}
                 </div>
 
             </motion.div>
@@ -496,6 +562,16 @@ export default function PropertyDetailClient({ property: p, user }: { property: 
             </motion.div>
         )}
       </AnimatePresence>
+
+      <ContactAdvisorModal 
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+        propertyTitle={p.title || p.address}
+        propertyId={p.id}
+        advisorName={p.assigned_advisor?.full_name || 'Experto Local'}
+        advisorId={p.assigned_advisor_id}
+        user={user}
+      />
     </motion.div>
   );
 }

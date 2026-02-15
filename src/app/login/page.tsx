@@ -1,18 +1,22 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { toast } from 'sonner'
+import { useSearchParams, useRouter } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginForm() {
   const supabase = createClient()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next')
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   
   const handleGoogleLogin = async () => {
     setLoading(true)
-    const redirectUrl = `${location.origin}/auth/callback`;
+    const redirectUrl = `${location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`;
     console.log('Redirecting to:', redirectUrl);
     
     const { error } = await supabase.auth.signInWithOAuth({
@@ -44,7 +48,12 @@ export default function LoginPage() {
     } else {
        // successful login
        toast.success('¡Bienvenido de nuevo!')
-       window.location.href = '/' // reloading to update auth state
+       if (next) {
+         router.push(next)
+         router.refresh()
+       } else {
+         window.location.href = '/' // reloading to update auth state
+       }
     }
   }
 
@@ -179,5 +188,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

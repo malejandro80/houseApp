@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
      return NextResponse.redirect(url)
   }
 
-  // 3. Role-Based Access Control (RBAC)
+  // 3. Role-Based Access Control (RBAC) & Redirections
   if (user) {
       // Fetch role from profiles
       const { data: profile } = await supabase
@@ -54,8 +54,30 @@ export async function updateSession(request: NextRequest) {
         .single();
       
       const role = profile?.role || 'usuario';
+      const isAdvisor = role === 'asesor' || role === 'superadmin';
 
-      // Example: Restrict 'asesor' routes
+      // 3.1. Landing Page Redirection
+      if (path === '/') {
+          const url = request.nextUrl.clone()
+          url.pathname = isAdvisor ? '/advisor/dashboard' : '/my-properties'
+          return NextResponse.redirect(url)
+      }
+
+      // 3.2. Restrict My Properties LIST for Advisors (but allow details)
+      if (path === '/my-properties' && isAdvisor) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/advisor/dashboard'
+          return NextResponse.redirect(url)
+      }
+
+      // 3.3. Restrict Advisor Dashboard for Regular Users
+      if (path.startsWith('/advisor') && !isAdvisor) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/my-properties'
+          return NextResponse.redirect(url)
+      }
+
+      // 3.4. Admin restrictions (keep existing)
       if (path.startsWith('/admin') && role !== 'superadmin') {
           return NextResponse.redirect(new URL('/', request.url));
       }

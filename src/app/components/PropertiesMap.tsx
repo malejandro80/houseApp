@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@supabase/supabase-js';
 import { getAdvisorContact } from '@/app/actions/contact';
 import { toast } from 'sonner';
+import { useUserRole } from '@/hooks/useUserRole';
+import ContactAdvisorModal from './ContactAdvisorModal';
 
 type Property = {
   id: string; 
@@ -74,6 +76,7 @@ function MapController({
 }
 
 export default function PropertiesMap({ properties, user, onBoundsChange, children }: PropertiesMapProps) {
+  const { isAsesor } = useUserRole();
   // Center: Mexico City default or first property
   const defaultCenter: [number, number] = properties.length > 0
     ? [properties[0].lat, properties[0].lon]
@@ -98,6 +101,7 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
   
   // Contact State
   const [contactingId, setContactingId] = useState<string | null>(null);
+  const [propertyForContact, setPropertyForContact] = useState<Property | null>(null);
 
   // Load Zones on Mount (Only if user logged in)
   useEffect(() => {
@@ -178,26 +182,12 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
       }
   };
   
-  const handleContactAdvisor = async (propertyId: string, advisorId: string | undefined | null) => {
-      if (!advisorId) {
+  const handleContactAdvisor = async (property: Property) => {
+      if (!property.assigned_advisor_id) {
           toast.info('Esta propiedad no tiene un asesor asignado aún.');
           return;
       }
-      
-      setContactingId(propertyId);
-      try {
-          const contact = await getAdvisorContact(advisorId);
-          if (contact.email) {
-              window.location.href = `mailto:${contact.email}?subject=Interés en propiedad ${propertyId}&body=Hola, estoy interesado en recibir más información sobre esta propiedad.`;
-          } else {
-              toast.error('No se encontró información de contacto para este asesor.');
-          }
-      } catch (e) {
-          console.error(e);
-          toast.error('Error al contactar asesor.');
-      } finally {
-          setContactingId(null);
-      }
+      setPropertyForContact(property);
   };
 
   return (
@@ -243,12 +233,12 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                  <div className="p-0 min-w-[240px] max-w-[260px] font-sans pb-3">
                   
                   {/* Property Image */}
-                  <div className="relative h-32 w-full bg-gray-100 mb-3">
+                  <Link href={`/my-properties/${property.id}`} className="relative h-32 w-full bg-gray-100 mb-3 block overflow-hidden rounded-xl group/img">
                     {property.cover_image ? (
                         <img 
                             src={property.cover_image} 
                             alt={property.title || 'Propiedad'} 
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -265,14 +255,16 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                             {healthStyle.text}
                         </span>
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="px-3">
                      {/* Title & Type */}
                     <div className="mb-3">
-                      <h3 className="font-black text-gray-900 leading-tight text-base mb-1 line-clamp-1 tracking-tight">
-                        {property.title || 'Propiedad sin nombre'}
-                      </h3>
+                      <Link href={`/my-properties/${property.id}`} className="block group/title">
+                        <h3 className="font-black text-gray-900 leading-tight text-base mb-1 line-clamp-1 tracking-tight group-hover/title:text-blue-700 transition-colors">
+                            {property.title || 'Propiedad sin nombre'}
+                        </h3>
+                      </Link>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1">
                             <Building2 size={10} aria-hidden="true" className="text-blue-600" /> {property.type}
@@ -334,7 +326,7 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <button
-                                            onClick={() => handleContactAdvisor(property.id, property.assigned_advisor_id)}
+                                            onClick={() => handleContactAdvisor(property)}
                                             disabled={contactingId === property.id}
                                             className="w-full py-3 bg-blue-700 hover:bg-blue-800 !text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-2"
                                             aria-label="Consultar Disponibilidad"
@@ -354,19 +346,25 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                                 </div>
                             )
                         ) : (
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                                <p className="text-[11px] text-gray-600 mb-4 font-bold text-center leading-relaxed">
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
+                                <Link 
+                                    href={`/my-properties/${property.id}`}
+                                    className="block w-full py-3 bg-gray-900 hover:bg-black !text-white text-center rounded-2xl text-xs font-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    Ver Propiedad
+                                    <ArrowRight size={14} />
+                                </Link>
+                                
+                                <p className="text-[10px] text-gray-500 mt-2 font-bold text-center leading-relaxed">
                                     Únete para contactar asesores y recibir <span className="text-blue-700 font-black italic">análisis exclusivos</span>.
                                 </p>
                                 <Link 
-                                    href="/login" 
-                                    className="block w-full py-4 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 !text-white text-center rounded-2xl text-xs font-black transition-all shadow-xl shadow-blue-900/20 active:scale-95 group relative overflow-hidden"
+                                    href={`/login?next=${encodeURIComponent('/map?contact=true')}`}
+                                    className="block w-full py-4 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 !text-white text-center rounded-2xl text-[10px] font-black transition-all shadow-xl shadow-blue-900/20 active:scale-95 group relative overflow-hidden uppercase tracking-widest"
                                 >
                                     <span className="relative z-10 flex items-center justify-center gap-2">
-                                        ¡Quiero esta propiedad!
-                                        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        ¡Me interesa! Regístrate
                                     </span>
-                                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity" />
                                 </Link>
                             </div>
                         )
@@ -410,9 +408,9 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
         )}
       </MapContainer>
       
-      {/* Floating Action Button (Top-Left) */}
+      {/* Floating Action Button (Top-Left) - Only for regular users */}
       <AnimatePresence>
-      {!isAnalyzerOpen && (
+      {!isAnalyzerOpen && !isAsesor && (
         <motion.button 
            initial={{ scale: 0, opacity: 0 }}
            animate={{ scale: 1, opacity: 1 }}
@@ -431,9 +429,9 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
       )}
       </AnimatePresence>
 
-      {/* Analyzer Drawer - LEFT aligned */}
+      {/* Analyzer Drawer - LEFT aligned - Only for regular users */}
       <AnimatePresence>
-      {isAnalyzerOpen && (
+      {isAnalyzerOpen && !isAsesor && (
         <motion.div 
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -688,6 +686,16 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
         </motion.div>
       )}
       </AnimatePresence>
+
+      <ContactAdvisorModal 
+        isOpen={!!propertyForContact}
+        onClose={() => setPropertyForContact(null)}
+        propertyTitle={propertyForContact?.title || propertyForContact?.address || ''}
+        propertyId={propertyForContact?.id || ''}
+        advisorName={propertyForContact?.assigned_advisor?.full_name || 'Experto Local'}
+        advisorId={propertyForContact?.assigned_advisor_id || null}
+        user={user}
+      />
 
       <style jsx global>{`
         .leaflet-popup-content-wrapper {

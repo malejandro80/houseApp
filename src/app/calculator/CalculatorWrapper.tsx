@@ -10,7 +10,10 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
+import { useUserRole } from '@/hooks/useUserRole';
+
 export default function CalculatorWrapper({ user }: { user: User }) {
+  const { isAsesor, loading: roleLoading } = useUserRole();
   const [step, setStep] = useState(0); // Start at 0 for Initial Choice
   const [mode, setMode] = useState<'buy' | 'sell' | null>(null);
 
@@ -19,10 +22,20 @@ export default function CalculatorWrapper({ user }: { user: User }) {
       setStep(1);
   };
 
-  if (step === 0) {
+  // Skip initial choice for advisors
+  if (!roleLoading && isAsesor && step === 0) {
+      setMode('sell');
+      setStep(1);
+  }
+
+  if (step === 0 || roleLoading) {
       return (
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 min-h-[600px] flex items-center justify-center">
-              <InitialChoice onSelect={handleModeSelect} />
+              {roleLoading ? (
+                  <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
+              ) : (
+                  <InitialChoice onSelect={handleModeSelect} />
+              )}
           </div>
       );
   }
@@ -41,35 +54,36 @@ export default function CalculatorWrapper({ user }: { user: User }) {
                 </p>
             </div>
             <div className="flex items-center gap-4">
-                {/* Refined Purpose Switcher */}
-                <div className="flex flex-col items-end gap-1.5">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Propósito</span>
-                <div className="bg-gray-100/80 backdrop-blur-sm p-1 rounded-xl flex items-center relative border border-gray-200/50 shadow-inner">
-                    <button 
-                        onClick={() => setMode('buy')}
-                        className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${mode === 'buy' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Inversión
-                    </button>
-                    <button 
-                        onClick={() => setMode('sell')}
-                        className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${mode === 'sell' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Venta
-                    </button>
-                    
-                    {/* Active Background Pill */}
-                    <motion.div 
-                        layoutId="activePillCalculator"
-                        initial={false}
-                        animate={{ x: mode === 'buy' ? 0 : '100.5%' }}
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        className="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-gray-900 rounded-lg shadow-md border border-white/10"
-                    />
-                </div>
-                </div>
+                {!isAsesor && (
+                    <div className="flex flex-col items-end gap-1.5">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Propósito</span>
+                    <div className="bg-gray-100/80 backdrop-blur-sm p-1 rounded-xl flex items-center relative border border-gray-200/50 shadow-inner">
+                        <button 
+                            onClick={() => setMode('buy')}
+                            className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${mode === 'buy' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Inversión
+                        </button>
+                        <button 
+                            onClick={() => setMode('sell')}
+                            className={`relative z-10 px-5 py-1.5 text-xs font-bold transition-all duration-300 ${mode === 'sell' ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Venta
+                        </button>
+                        
+                        {/* Active Background Pill */}
+                        <motion.div 
+                            layoutId="activePillCalculator"
+                            initial={false}
+                            animate={{ x: mode === 'buy' ? 0 : '100.5%' }}
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            className="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-gray-900 rounded-lg shadow-md border border-white/10"
+                        />
+                    </div>
+                    </div>
+                )}
 
-                <div className="h-10 w-px bg-gray-200 mx-2 self-end mb-1" />
+                {!isAsesor && <div className="h-10 w-px bg-gray-200 mx-2 self-end mb-1" />}
 
                 <Link 
                   href="/my-properties"

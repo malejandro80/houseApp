@@ -21,7 +21,21 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     notFound();
   }
 
+  // RBAC: Check access permissions
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user?.id || '')
+    .single();
+
+  const role = profile?.role || 'usuario';
+  const isExpert = role === 'asesor' || role === 'superadmin';
   const isOwner = user?.id === rawProperty.user_id;
+  const isPublicSale = rawProperty.is_listed && rawProperty.purpose === 'sale';
+
+  if (!isExpert && !isOwner && !isPublicSale) {
+    notFound(); // Protect privacy of private analyses/unlisted properties
+  }
 
   // Transform data
   const property = {
@@ -41,5 +55,5 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     images: rawProperty.images || []
   };
 
-  return <PropertyDetailClient property={property as any} user={user} />;
+  return <PropertyDetailClient property={property as any} user={user} userRole={role} />;
 }

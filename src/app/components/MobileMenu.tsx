@@ -36,8 +36,8 @@ export default function MobileMenu({ user }: MobileMenuProps) {
           
           {user && (
             <>
-              {/* Only Asesores/Admins can see My Properties management */}
-              {!loading && isAsesor && (
+              {/* Ordinary users see My Properties */}
+              {!loading && !isAsesor && (
                   <Link 
                     href="/my-properties" 
                     className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
@@ -45,6 +45,33 @@ export default function MobileMenu({ user }: MobileMenuProps) {
                   >
                     Mis Propiedades
                   </Link>
+              )}
+
+              {/* Advisors see their specific tools */}
+              {!loading && isAsesor && (
+                <>
+                  <Link 
+                    href="/advisor/dashboard" 
+                    className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-slate-50 hover:text-indigo-700 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Consola de Asesor
+                  </Link>
+                  <Link 
+                    href="/advisor/pipeline" 
+                    className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-slate-50 hover:text-indigo-700 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Pipeline de Ventas
+                  </Link>
+                  <Link 
+                    href="/advisor/inbox" 
+                    className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-slate-50 hover:text-indigo-700 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Bandeja de Leads
+                  </Link>
+                </>
               )}
               
               <Link 

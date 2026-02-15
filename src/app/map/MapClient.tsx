@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { LayoutGrid, Home, TrendingUp, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export type Property = {
   id: string;
@@ -25,6 +26,7 @@ export type Property = {
 };
 
 export default function MapClient({ user }: { user: User | null }) {
+  const { isAsesor } = useUserRole();
   const supabase = createClient();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -59,14 +61,15 @@ export default function MapClient({ user }: { user: User | null }) {
 
       if (user) {
           if (filter === 'market') {
-              // Show only public listed properties (Market view)
-              query = query.eq('is_listed', true);
+              // Show only public listed properties for SALE (Market view)
+              query = query.eq('is_listed', true).eq('purpose', 'sale');
           } else {
               // Strictly my properties by purpose (sale or investment)
               query = query.eq('user_id', user.id).eq('purpose', filter);
           }
       } else {
-          query = query.eq('is_listed', true);
+          // Public view: only listed properties for SALE
+          query = query.eq('is_listed', true).eq('purpose', 'sale');
       }
 
       const { data, error } = await query;
@@ -107,9 +110,9 @@ export default function MapClient({ user }: { user: User | null }) {
         </div>
       </div>
 
-      {/* Filter Bar (Only for logged in users) */}
+      {/* Filter Bar (Only for logged in users who are NOT advisors) */}
       <AnimatePresence>
-      {user && (
+      {user && !isAsesor && (
         <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

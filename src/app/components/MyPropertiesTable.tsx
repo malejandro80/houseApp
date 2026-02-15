@@ -3,13 +3,14 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
-import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon, MoreVertical, ExternalLink } from 'lucide-react';
+import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon, MoreVertical, ExternalLink, Eye, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { publishProperty, deleteProperty } from '@/app/actions/property';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
 interface SavedProperty {
@@ -26,6 +27,7 @@ interface SavedProperty {
   is_listed: boolean;
   area_total: number;
   area_built: number;
+  view_count: number;
   assigned_advisor_id: string | null;
   assigned_advisor?: {
     full_name: string | null;
@@ -35,20 +37,32 @@ interface SavedProperty {
 
 const PAGE_SIZE = 10;
 
-export default function MyPropertiesTable({ userId }: { userId: string }) {
+export default function MyPropertiesTable({ 
+  userId, 
+  viewMode = 'owner' 
+}: { 
+  userId: string, 
+  viewMode?: 'owner' | 'advisor' 
+}) {
   const [properties, setProperties] = useState<SavedProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [sortBy, setSortBy] = useState<'profitability' | 'created_at' | 'sale_price' | 'price_m2'>('profitability');
+  const [sortBy, setSortBy] = useState<'profitability' | 'created_at' | 'sale_price' | 'price_m2' | 'view_count'>(viewMode === 'advisor' ? 'created_at' : 'profitability');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPurpose, setFilterPurpose] = useState<string>('all');
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number, right: number } | null>(null);
   
   const supabase = createClient();
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -64,8 +78,13 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                 full_name,
                 verification_status
             )
-        `, { count: 'exact' })
-        .eq('user_id', userId);
+        `, { count: 'exact' });
+
+      if (viewMode === 'advisor') {
+        query = query.or(`assigned_advisor_id.eq.${userId},user_id.eq.${userId}`);
+      } else {
+        query = query.eq('user_id', userId);
+      }
 
       if (filterType !== 'all') {
         query = query.eq('type', filterType);
@@ -75,8 +94,9 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
         query = query.eq('purpose', filterPurpose);
       }
 
+      const orderByColumn = sortBy === 'price_m2' ? 'sale_price' : sortBy;
       const { data, count, error } = await query
-        .order(sortBy === 'price_m2' ? 'sale_price' : sortBy, { ascending: sortOrder === 'asc' })
+        .order(orderByColumn, { ascending: sortOrder === 'asc' })
         .range(from, to);
 
       if (error) {
@@ -181,23 +201,25 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
               </div>
             </div>
 
-            <div className="relative group w-full sm:w-48">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Target className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+            {viewMode !== 'advisor' && (
+              <div className="relative group w-full sm:w-48">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Target className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                </div>
+                <select 
+                  className="block w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:bg-white cursor-pointer appearance-none uppercase tracking-tight"
+                  value={filterPurpose}
+                  onChange={(e) => { setFilterPurpose(e.target.value); setPage(1); }}
+                >
+                  <option value="all">Propósito</option>
+                  <option value="sale">En Venta</option>
+                  <option value="investment">Para Inversión</option>
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <ChevronRight size={12} className="text-slate-400 rotate-90" />
+                </div>
               </div>
-              <select 
-                className="block w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:bg-white cursor-pointer appearance-none uppercase tracking-tight"
-                value={filterPurpose}
-                onChange={(e) => { setFilterPurpose(e.target.value); setPage(1); }}
-              >
-                <option value="all">Propósito</option>
-                <option value="sale">En Venta</option>
-                <option value="investment">Para Inversión</option>
-              </select>
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <ChevronRight size={12} className="text-slate-400 rotate-90" />
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Right: Sort Controls */}
@@ -210,7 +232,11 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                       value={sortBy}
                       onChange={(e) => { setSortBy(e.target.value as any); setPage(1); }}
                   >
-                      <option value="profitability">Mayor Rentabilidad</option>
+                      {viewMode === 'advisor' ? (
+                          <option value="view_count">Más Vistas</option>
+                      ) : (
+                          <option value="profitability">Mayor Rentabilidad</option>
+                      )}
                       <option value="created_at">Más Recientes</option>
                       <option value="sale_price">Precio de Venta</option>
                       <option value="price_m2">Precio por m²</option>
@@ -235,13 +261,20 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
         <table className="min-w-full divide-y divide-slate-200 bg-white">
           <thead className="bg-slate-50">
             <tr>
-              <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Propiedad</th>
-              <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Ubicación</th>
-              <th scope="col" className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Registrado</th>
-              <th scope="col" className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Precio Venta</th>
-              <th scope="col" className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Alquiler Est.</th>
-              <th scope="col" className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Rentabilidad</th>
-              <th scope="col" className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap min-w-[120px]">Acciones</th>
+              <th scope="col" className="w-[30%] px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Propiedad</th>
+              <th scope="col" className="w-[20%] px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Ubicación</th>
+              <th scope="col" className="w-[15%] px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Registrado</th>
+              <th scope="col" className="w-[15%] px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Precio Venta</th>
+              {viewMode !== 'advisor' && (
+                <>
+                  <th scope="col" className="w-[15%] px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Alquiler Est.</th>
+                  <th scope="col" className="w-[10%] px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Rentabilidad</th>
+                </>
+              )}
+              {viewMode === 'advisor' && (
+                <th scope="col" className="w-[10%] px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Vistas</th>
+              )}
+              <th scope="col" className="w-[10%] px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -276,9 +309,9 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                               </div>
                           )}
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{property.title || 'Propiedad sin título'}</div>
-                        <div className="text-xs text-gray-500 capitalize">{property.type}</div>
+                      <div className="ml-4 overflow-hidden">
+                        <div className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors truncate">{property.title || 'Propiedad sin título'}</div>
+                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{property.type}</div>
                         
                         {/* Status Tags */}
                         {property.is_listed ? (
@@ -318,67 +351,106 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                    <div className="flex items-center text-sm text-gray-700">
-                      <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-500" aria-hidden="true" />
-                      <span className="truncate max-w-[150px]">{property.address}</span>
+                    <div className="flex items-center text-xs font-bold text-slate-600">
+                      <MapPin className="flex-shrink-0 mr-2 h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                      <span className="truncate max-w-[180px]">{property.address}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                    <div className="flex items-center text-xs font-bold text-slate-400">
+                      <Calendar className="flex-shrink-0 mr-2 h-3.5 w-3.5 text-slate-300" />
                       <span className="capitalize">{timeAgo}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
+                   <td className="px-6 py-4 whitespace-nowrap text-right cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
                     <div>
-                        ${property.sale_price.toLocaleString()}
-                        <div className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">
+                        <div className="text-sm font-black text-slate-900">${property.sale_price.toLocaleString()}</div>
+                        <div className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-tighter">
                             ${(property.sale_price / (property.area_total || property.area_built || 1)).toLocaleString(undefined, { maximumFractionDigits: 0 })}/m²
                         </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                    ${property.rent_price.toLocaleString()}/mes
-                  </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center cursor-pointer relative" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                    <div className="flex flex-col items-center gap-1">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${healthStyle.bg} ${healthStyle.color} ${healthStyle.borderColor}`}>
-                        <TrendingUp className="mr-1 h-3 w-3" />
-                        {netReturn.toFixed(1)}% ({healthStyle.text})
-                        </span>
-                        {netReturn >= 10 && (
-                            <motion.span 
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 uppercase tracking-tighter flex items-center gap-1 shadow-sm shadow-amber-200/50"
-                            >
-                                <span className="animate-pulse">💎</span> Oportunidad Top
-                            </motion.span>
-                        )}
-                    </div>
-                  </td>
+                  {viewMode !== 'advisor' && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
+                        ${property.rent_price.toLocaleString()}/mes
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center cursor-pointer relative" onClick={() => router.push(`/my-properties/${property.id}`)}>
+                        <div className="flex flex-col items-center gap-1">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${healthStyle.bg} ${healthStyle.color} ${healthStyle.borderColor}`}>
+                            <TrendingUp className="mr-1 h-3 w-3" />
+                            {netReturn.toFixed(1)}% ({healthStyle.text})
+                            </span>
+                            {netReturn >= 10 && (
+                                <motion.span 
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 uppercase tracking-tighter flex items-center gap-1 shadow-sm shadow-amber-200/50"
+                                >
+                                    <span className="animate-pulse">💎</span> Oportunidad Top
+                                </motion.span>
+                            )}
+                        </div>
+                      </td>
+                    </>
+                  )}
+                  {viewMode === 'advisor' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-center cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
+                        <div className="flex flex-col items-center">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-900 text-xs font-black border border-slate-100 shadow-sm group-hover:bg-white transition-colors">
+                                <Eye size={12} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                                {property.view_count || 0}
+                            </span>
+                        </div>
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="relative inline-block text-left">
+                    <div className="flex items-center justify-end gap-2">
+                        {viewMode === 'advisor' && (
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Logic for sharing would go here
+                                    toast.success('Kit de Marketing generado para ' + (property.title || property.address));
+                                }}
+                                className="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm"
+                                title="Marketing Push"
+                            >
+                                <Share2 size={16} />
+                            </button>
+                        )}
+                        
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setMenuPosition({ top: rect.bottom, right: window.innerWidth - rect.right });
                                 setOpenMenuId(openMenuId === property.id ? null : property.id);
                             }}
-                            className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all border border-transparent hover:border-slate-200 shadow-sm hover:shadow-md"
+                            className={`p-2 rounded-xl transition-all border shadow-sm ${
+                                openMenuId === property.id 
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100' 
+                                : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:shadow-md'
+                            }`}
+                            title="Más Acciones"
                         >
                             <MoreVertical size={16} />
                         </button>
                         
-                        {openMenuId === property.id && (
+                        {mounted && openMenuId === property.id && menuPosition && createPortal(
                             <>
                                 <div 
-                                    className="fixed inset-0 z-10" 
+                                    className="fixed inset-0 z-[100]" 
                                     onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }}
                                 />
                                 <motion.div 
                                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl z-20 py-2 overflow-hidden"
+                                    className="fixed w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[110] py-2 overflow-hidden text-left"
+                                    style={{ 
+                                        top: `${menuPosition.top + 8}px`, 
+                                        right: `${menuPosition.right}px` 
+                                    }}
                                 >
                                     <button 
                                         onClick={(e) => {
@@ -418,7 +490,8 @@ export default function MyPropertiesTable({ userId }: { userId: string }) {
                                         Eliminar
                                     </button>
                                 </motion.div>
-                            </>
+                            </>,
+                            document.body
                         )}
                     </div>
                   </td>

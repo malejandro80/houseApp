@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import UserMenu from "./UserMenu";
 import MobileMenu from "./MobileMenu";
+import AdvisorNotifications from "./AdvisorNotifications";
 
 export default async function Navbar() {
   const supabase = await createClient();
@@ -24,6 +25,7 @@ export default async function Navbar() {
           </div>
           
           <div className="flex items-center gap-4">
+            <AdvisorNotifications />
             <UserMenu user={user} />
             <div className="md:hidden flex items-center">
                 <MobileMenu user={user} />

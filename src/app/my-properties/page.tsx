@@ -16,6 +16,17 @@ export default async function MyPropertiesPage() {
     return redirect('/login');
   }
 
+  // Fallback: Redirect advisors to their dedicated console
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role === 'asesor' || profile?.role === 'superadmin') {
+    return redirect('/advisor/dashboard');
+  }
+
   return (
     <main className="min-h-screen bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
