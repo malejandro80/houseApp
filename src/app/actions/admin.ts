@@ -44,3 +44,37 @@ export async function verifyAdvisor(advisorId: string, action: 'approve' | 'reje
   revalidatePath('/admin/advisors');
   return { success: true };
 }
+
+export async function getAdminStats() {
+  const supabase = await createClient();
+  
+  // 1. Verify admin
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+  
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'superadmin') throw new Error('Forbidden');
+
+  // 2. Fetch Aggregated Stats
+  const [
+    { count: totalUsers },
+    { count: totalAdvisors },
+    { count: pendingAdvisors },
+    { count: totalProperties },
+    { count: totalLeads }
+  ] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'usuario'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'asesor'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('verification_status', 'pending'),
+    supabase.from('properties').select('*', { count: 'exact', head: true }),
+    supabase.from('leads').select('*', { count: 'exact', head: true })
+  ]);
+
+  return {
+    investors: totalUsers || 0,
+    advisors: totalAdvisors || 0,
+    pendingAdvisors: pendingAdvisors || 0,
+    properties: totalProperties || 0,
+    leads: totalLeads || 0
+  };
+}

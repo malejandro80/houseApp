@@ -45,16 +45,31 @@ function LoginForm() {
        console.error('Error logging in:', error.message)
        toast.error('Error al iniciar sesión: ' + error.message)
        setLoading(false)
-    } else {
-       // successful login
-       toast.success('¡Bienvenido de nuevo!')
-       if (next) {
-         router.push(next)
-         router.refresh()
-       } else {
-         window.location.href = '/' // reloading to update auth state
-       }
-    }
+     } else {
+        // successful login
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          let redirectPath = next || '/'
+          
+          if (!next) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', user.id)
+              .single()
+
+            if (profile?.role === 'superadmin') {
+              redirectPath = '/admin'
+            } else if (profile?.role === 'asesor') {
+              redirectPath = '/advisor/dashboard'
+            }
+          }
+
+          toast.success('¡Bienvenido de nuevo!')
+          window.location.href = redirectPath
+        }
+     }
   }
 
   const handleSignUp = async () => {

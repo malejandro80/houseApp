@@ -12,7 +12,7 @@ type MobileMenuProps = {
 
 export default function MobileMenu({ user }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAsesor, loading } = useUserRole();
+  const { role, isAsesor, loading } = useUserRole();
 
   return (
     <div className="md:hidden flex items-center">
@@ -48,7 +48,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
               )}
 
               {/* Advisors see their specific tools */}
-              {!loading && isAsesor && (
+              {!loading && (role === 'asesor' || role === 'superadmin') && (
                 <>
                   <Link 
                     href="/advisor/dashboard" 
@@ -57,6 +57,24 @@ export default function MobileMenu({ user }: MobileMenuProps) {
                   >
                     Consola de Asesor
                   </Link>
+                  {role === 'superadmin' && (
+                    <>
+                      <Link 
+                        href="/admin" 
+                        className="block px-4 py-3 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors border-l-4 border-indigo-600"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Panel Maestro
+                      </Link>
+                      <Link 
+                        href="/admin/advisors" 
+                        className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-indigo-50 transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Solicitudes Asesores
+                      </Link>
+                    </>
+                  )}
                   <Link 
                     href="/advisor/pipeline" 
                     className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-slate-50 hover:text-indigo-700 transition-colors"

@@ -9,9 +9,28 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+    const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (user) {
+      // If we have a code and converted it to a session, check the role
+      // to decide the default redirect if 'next' wasn't specific.
+      let redirectPath = next;
+      
+      if (next === '/my-properties') { // Only change if it's the generic default
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.role === 'superadmin') {
+          redirectPath = '/admin';
+        } else if (profile?.role === 'asesor') {
+          redirectPath = '/advisor/dashboard';
+        }
+      }
+      
+      return NextResponse.redirect(`${origin}${redirectPath}`)
     }
   }
 

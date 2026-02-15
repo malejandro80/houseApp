@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem, Trello, MessageSquare } from 'lucide-react';
+import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem, Trello, MessageSquare, ShieldCheck, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserRole } from '@/hooks/useUserRole';
 import { createPortal } from 'react-dom';
@@ -52,6 +52,8 @@ export default function UserMenu({ user }: { user: User | null }) {
     { name: 'Mis Propiedades', href: '/my-properties', icon: Building2, roles: ['usuario'] },
     { name: 'Mis Mensajes', href: '/my-properties/messages', icon: MessageSquare, roles: ['usuario'] },
     { name: 'Consola de Asesor', href: '/advisor/dashboard', icon: BarChart3, roles: ['asesor', 'superadmin'] },
+    { name: 'Panel Maestro', href: '/admin', icon: ShieldCheck, roles: ['superadmin'] },
+    { name: 'Solicitudes Asesores', href: '/admin/advisors', icon: Users, roles: ['superadmin'] },
     { name: 'Pipeline de Ventas', href: '/advisor/pipeline', icon: Trello, roles: ['asesor', 'superadmin'] },
     { name: 'Bandeja de Leads', href: '/advisor/inbox', icon: MessageSquare, roles: ['asesor', 'superadmin'] },
     { name: 'Mapa Global', href: '/map', icon: Map, roles: ['usuario', 'asesor', 'superadmin'] },

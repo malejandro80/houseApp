@@ -57,31 +57,39 @@ export default async function AdminAdvisorsPage() {
     };
   }));
 
+
+
   return (
-    <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      <div className="md:flex md:items-center md:justify-between mb-8">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight flex items-center gap-2">
-            <ShieldAlert className="h-8 w-8 text-indigo-600" />
-            Solicitudes de Asesores
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Revisa y aprueba la documentación de los aspirantes a asesores.
-          </p>
+    <main className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-12">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-500/20">
+                    <ShieldAlert size={24} />
+                </div>
+                <div>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Validación de Asesores</h1>
+                    <p className="text-slate-500 font-medium mt-1">Revisa y aprueba la documentación de los aspirantes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8">
+          {requestsWithSignedUrls.length === 0 ? (
+              <div className="text-center py-24 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                    <ShieldAlert size={32} />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-1">Todo en orden</h3>
+                  <p className="text-slate-400 font-medium">No hay solicitudes pendientes de validación.</p>
+              </div>
+          ) : (
+              requestsWithSignedUrls.map((req) => (
+                  <AdvisorRequestCard key={req.id} profile={req} />
+              ))
+          )}
         </div>
       </div>
-
-      <div className="space-y-6">
-        {requestsWithSignedUrls.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <p className="text-gray-500">No hay solicitudes pendientes.</p>
-            </div>
-        ) : (
-            requestsWithSignedUrls.map((req) => (
-                <AdvisorRequestCard key={req.id} profile={req} />
-            ))
-        )}
-      </div>
-    </div>
+    </main>
   );
 }

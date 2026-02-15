@@ -14,6 +14,7 @@ import { User } from '@supabase/supabase-js';
 import { propertyFormSchema, PropertyFormData } from '@/lib/schemas/propertySchema';
 import Image from 'next/image';
 import NumberInput from './NumberInput';
+import PhoneInput from './PhoneInput';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -921,10 +922,16 @@ export default function PropertyForm({
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">Teléfono / WhatsApp</label>
-                  <input
-                    {...register('ownerPhone')}
-                    className="w-full text-gray-900 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-gray-400"
-                    placeholder="Ej. +57 300 000 0000"
+                  <Controller
+                    name="ownerPhone"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput
+                        {...field}
+                        placeholder="(300) 000-0000"
+                        className="w-full text-gray-900 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-gray-400"
+                      />
+                    )}
                   />
                 </div>
                 <div className="space-y-2">

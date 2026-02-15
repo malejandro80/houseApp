@@ -6,6 +6,7 @@ import { X, Send, MessageSquare, User as UserIcon, Phone, Mail, Building2, Check
 import { toast } from 'sonner';
 import { submitInquiry } from '@/app/actions/leads';
 import { createClient } from '@/lib/supabase/client';
+import PhoneInput from './PhoneInput';
 
 interface ContactAdvisorModalProps {
     isOpen: boolean;
@@ -165,13 +166,12 @@ export default function ContactAdvisorModal({
                                             />
                                         </div>
                                         <div className="relative">
-                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input 
+                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={18} />
+                                            <PhoneInput 
                                                 required
-                                                type="tel" 
                                                 placeholder="Teléfono móvil"
                                                 value={formData.phone}
-                                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                                onChange={(val) => setFormData({...formData, phone: val})}
                                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                                             />
                                         </div>
