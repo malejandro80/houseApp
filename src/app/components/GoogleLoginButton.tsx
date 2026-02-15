@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 
-export default function GoogleLoginButton() {
+export default function GoogleLoginButton({ className }: { className?: string }) {
   const supabase = createClient();
 
   const handleLogin = async () => {
@@ -21,7 +21,7 @@ export default function GoogleLoginButton() {
   return (
     <button
       onClick={handleLogin}
-      className="flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-white text-gray-700 font-bold rounded-xl shadow-md border border-gray-200 hover:bg-gray-50 hover:shadow-lg transition-all hover:-translate-y-0.5 group"
+      className={className || "flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-white text-gray-700 font-bold rounded-xl shadow-md border border-gray-200 hover:bg-gray-50 hover:shadow-lg transition-all hover:-translate-y-0.5 group"}
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path

@@ -232,22 +232,22 @@ export default async function Home() {
                 Tu primera propiedad analizada es totalmente gratis. Empieza hoy mismo.
               </p>
               
-              <div className="flex flex-col items-center gap-6">
+              <div className="flex flex-col items-center gap-8">
                 <Link 
                   href="/calculator"
-                  className="px-12 py-6 bg-white text-slate-900 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl hover:bg-slate-50 hover:scale-105 transition-all duration-300"
+                  className="w-full max-w-[280px] py-5 bg-white text-slate-900 rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 flex items-center justify-center"
                 >
                   Empezar Ahora
                 </Link>
                 
                 {!user && (
-                   <div className="animate-fade-in w-full max-w-xs">
-                      <div className="flex items-center gap-4 mb-4">
+                   <div className="animate-fade-in w-full max-w-[280px]">
+                      <div className="flex items-center gap-4 mb-8">
                           <div className="h-px bg-white/20 flex-1"></div>
-                          <span className="text-white/40 text-[9px] uppercase font-black tracking-widest">O entra con tu cuenta</span>
+                          <span className="text-white/40 text-[9px] uppercase font-black tracking-widest whitespace-nowrap">O entra con tu cuenta</span>
                           <div className="h-px bg-white/20 flex-1"></div>
                       </div>
-                      <GoogleLoginButton />
+                      <GoogleLoginButton className="w-full py-5 bg-white text-slate-900 rounded-[2rem] font-black text-sm uppercase tracking-[0.1em] shadow-2xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 border-none" />
                    </div>
                 )}
               </div>
