@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCcw } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+
 import { Spinner } from "@/components/ui/Spinner";
 
 interface Transaction {
