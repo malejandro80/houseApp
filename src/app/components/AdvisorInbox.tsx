@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -44,9 +45,10 @@ interface AdvisorInboxProps {
 }
 
 export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
+    const searchParams = useSearchParams();
     const [messages, setMessages] = useState<LeadMessage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeId, setActiveId] = useState<string | null>(null);
+    const [activeId, setActiveId] = useState<string | null>(searchParams.get('id'));
     const [searchQuery, setSearchQuery] = useState('');
 
     const fetchData = async () => {
@@ -84,7 +86,7 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
             <div className="w-full lg:w-96 flex flex-col border-r border-slate-100 bg-slate-50/50">
                 <div className="p-6 border-b border-slate-100 bg-white">
                     <h3 className="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
-                        {mode === 'advisor' ? 'Bandeja de Leads' : 'Mis Consultas'}
+                        {mode === 'advisor' ? 'Mensajes' : 'Mis Consultas'}
                         <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
                             {messages.filter(m => m.status === 'new' || (mode === 'user' && m.status === 'replied')).length}
                         </span>

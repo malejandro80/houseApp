@@ -23,7 +23,7 @@ interface Tab {
 const TABS: Tab[] = [
     { id: 'properties', label: 'Portafolio', icon: LayoutDashboard, color: 'indigo' },
     { id: 'pipeline', label: 'Flujo de Ventas', icon: Trello, color: 'blue' },
-    { id: 'inbox', label: 'Bandeja de Leads', icon: MessageSquare, color: 'emerald' },
+    { id: 'inbox', label: 'Mensajes', icon: MessageSquare, color: 'emerald' },
 ];
 
 export default function DashboardTabs({ userId }: { userId: string }) {

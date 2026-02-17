@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     MoreHorizontal, 
@@ -14,7 +15,8 @@ import {
     Loader2,
     Edit2,
     Trash2,
-    Mail
+    Mail,
+    MessageCircle
 } from 'lucide-react';
 import {
   DndContext,
@@ -29,6 +31,8 @@ import {
   DragOverlay,
   DropAnimation,
   defaultDropAnimationSideEffects,
+  pointerWithin,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -59,6 +63,7 @@ export default function KanbanBoard() {
     const [newTaskColumnId, setNewTaskColumnId] = useState<string | null>(null);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
     const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Initial Fetch
     const fetchData = useCallback(async () => {
@@ -121,15 +126,36 @@ export default function KanbanBoard() {
             const activeIndex = activeTasks.findIndex(t => t.id === activeId);
             const overIndex = overTasks.findIndex(t => t.id === overId);
 
+            if (activeIndex === -1) return prev;
+
             let newIndex: number;
+            
+            // If dropping on the column container itself
             if (prev.some(col => col.id === overId)) {
-                newIndex = overTasks.length;
+                newIndex = overTasks.length; // Append to end
             } else {
-                newIndex = overIndex >= 0 ? overIndex : overTasks.length;
+                // If dropping over another item
+                const isBelowOverItem =
+                  over &&
+                  active.rect.current.translated &&
+                  active.rect.current.translated.top >
+                    over.rect.top + over.rect.height;
+        
+                const modifier = isBelowOverItem ? 1 : 0;
+        
+                newIndex = overIndex >= 0 ? overIndex + modifier : overTasks.length + 1;
             }
 
+            // Remove from source
             const [movedTask] = activeTasks.splice(activeIndex, 1);
+            if (!movedTask) return prev; // Safety check
+
+            // Update stage_id immediately for the UI
             const updatedTask = { ...movedTask, stage_id: currentOverCol.id };
+            
+            // Add to target
+            // Ensure we don't go out of bounds (though splice handles it)
+            // If newIndex > length, splice appends.
             overTasks.splice(newIndex, 0, updatedTask);
 
             return prev.map(col => {
@@ -234,12 +260,27 @@ export default function KanbanBoard() {
         }),
     };
 
+    const filteredColumns = columns.map(col => ({
+        ...col,
+        tasks: col.tasks.filter(task => 
+            task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            task.client_name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    }));
+
+
     return (
         <div className="flex flex-col gap-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input type="text" placeholder="Buscar prospecto..." className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm" />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por título o cliente..." 
+                        className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
                 <button 
                     onClick={() => { 
@@ -258,41 +299,23 @@ export default function KanbanBoard() {
                     <Loader2 className="animate-spin text-indigo-600" size={40} />
                 </div>
             ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+                <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
                     <div className="flex gap-6 overflow-x-auto pb-8 -mx-4 px-4 scrollbar-hide items-start">
-                        {columns.map((column) => (
-                            <div key={column.id} className="flex-shrink-0 w-80">
-                                <div className="flex items-center gap-3 mb-4 px-2">
-                                    <div className={`w-2 h-2 rounded-full ${column.color}`} />
-                                    <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{column.name}</h3>
-                                    <span className="bg-slate-200/50 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">{column.tasks.length}</span>
-                                </div>
-                                
-                                <SortableContext id={column.id} items={column.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                                    <div className="flex flex-col gap-4 min-h-[500px] p-2 bg-slate-100/30 rounded-[2rem] border-2 border-dashed border-slate-200/50">
-                                        {column.tasks.map((task) => (
-                                            <KanbanCard 
-                                                key={task.id} 
-                                                task={task} 
-                                                onEdit={() => { setEditingLead(task); setIsModalOpen(true); }} 
-                                                onDelete={() => setLeadToDelete(task.id)} 
-                                            />
-                                        ))}
-                                        
-                                        <button 
-                                            onClick={() => { 
-                                                setEditingLead(null); 
-                                                setNewTaskColumnId(column.id); 
-                                                setIsModalOpen(true); 
-                                            }} 
-                                            className="w-full py-4 flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all group"
-                                        >
-                                            <Plus size={16} className="group-hover:scale-110 transition-transform" /> 
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Añadir a {column.name}</span>
-                                        </button>
-                                    </div>
-                                </SortableContext>
-                            </div>
+                        {filteredColumns.map((column) => (
+                            <KanbanColumn key={column.id} column={column} onAddTask={() => { 
+                                setEditingLead(null); 
+                                setNewTaskColumnId(column.id); 
+                                setIsModalOpen(true); 
+                            }}>
+                                {column.tasks.map((task) => (
+                                    <KanbanCard 
+                                        key={task.id} 
+                                        task={task} 
+                                        onEdit={() => { setEditingLead(task); setIsModalOpen(true); }} 
+                                        onDelete={() => setLeadToDelete(task.id)} 
+                                    />
+                                ))}
+                            </KanbanColumn>
                         ))}
                     </div>
                     <DragOverlay dropAnimation={dropAnimation}>
@@ -334,7 +357,41 @@ export default function KanbanBoard() {
     );
 }
 
+function KanbanColumn({ column, children, onAddTask }: { column: KanbanStageWithLeads, children: React.ReactNode, onAddTask: () => void }) {
+    const { setNodeRef } = useDroppable({
+        id: column.id,
+    });
+
+    return (
+        <div className="flex-shrink-0 w-80">
+            <div className="flex items-center gap-3 mb-4 px-2">
+                <div className={`w-2 h-2 rounded-full ${column.color}`} />
+                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{column.name}</h3>
+                <span className="bg-slate-200/50 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">{column.tasks.length}</span>
+            </div>
+            
+            <SortableContext id={column.id} items={column.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <div 
+                    ref={setNodeRef}
+                    className="flex flex-col gap-4 min-h-[500px] p-2 bg-slate-100/30 rounded-[2rem] border-2 border-dashed border-slate-200/50"
+                >
+                    {children}
+                    
+                    <button 
+                        onClick={onAddTask}
+                        className="w-full py-4 flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all group"
+                    >
+                        <Plus size={16} className="group-hover:scale-110 transition-transform" /> 
+                        <span className="text-[10px] font-black uppercase tracking-widest">Añadir a {column.name}</span>
+                    </button>
+                </div>
+            </SortableContext>
+        </div>
+    );
+}
+
 function KanbanCard({ task, isOverlay, onEdit, onDelete }: { task: Lead, isOverlay?: boolean, onEdit?: () => void, onDelete?: () => void }) {
+    const router = useRouter();
     const [showMenu, setShowMenu] = useState(false);
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
     const style = { 
@@ -400,17 +457,22 @@ function KanbanCard({ task, isOverlay, onEdit, onDelete }: { task: Lead, isOverl
                         <span className="text-[10px] font-medium truncate">{task.client_email || task.client_phone}</span>
                     </div>
                 )}
-                {task.message && (
-                    <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100/50">
-                        <p className="text-[10px] text-slate-500 italic line-clamp-2 leading-relaxed">
-                            "{task.message}"
-                        </p>
-                    </div>
-                )}
-                <div className="flex items-center gap-2.5 text-slate-400">
+                <div className="flex items-center gap-2.5 text-slate-400 mb-3">
                     <div className="p-1 bgColor-slate-100 rounded-lg"><MapPin size={12} /></div>
                     <span className="text-[11px] font-medium truncate">{task.address_reference || 'Ubicación no especificada'}</span>
                 </div>
+
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Navigate to inbox with the lead ID selected
+                        router.push(`/advisor/inbox?id=${task.id}`);
+                    }}
+                    className="w-full py-2.5 mb-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-wide transition-colors flex items-center justify-center gap-2 group/btn"
+                >
+                    <MessageCircle size={14} className="group-hover/btn:scale-110 transition-transform" />
+                    Chat con el Cliente
+                </button>
 
             <div className="pt-5 border-t border-slate-50 flex items-center justify-between">
                 <div className="flex flex-col">

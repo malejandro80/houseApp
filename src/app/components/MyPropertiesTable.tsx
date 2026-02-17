@@ -3,13 +3,13 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
-import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon, MoreVertical, ExternalLink, Eye, Share2 } from 'lucide-react';
+import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon, MoreVertical, ExternalLink, Eye, Share2, PauseCircle, PlayCircle, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { publishProperty, deleteProperty } from '@/app/actions/property';
+import { publishProperty, deleteProperty, pauseProperty } from '@/app/actions/property';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
@@ -25,6 +25,7 @@ interface SavedProperty {
   created_at: string;
   cover_image: string | null;
   is_listed: boolean;
+  listing_status?: string;
   area_total: number;
   area_built: number;
   view_count: number;
@@ -55,7 +56,26 @@ export default function MyPropertiesTable({
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<{ top: number, right: number } | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number, left: number } | null>(null);
+  
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+      isOpen: boolean;
+      title: string;
+      message: string;
+      confirmText: string;
+      cancelText: string;
+      type: 'danger' | 'info';
+      onConfirm: () => Promise<void>;
+  }>({
+      isOpen: false,
+      title: '',
+      message: '',
+      confirmText: 'Confirmar',
+      cancelText: 'Cancelar',
+      type: 'info',
+      onConfirm: async () => {},
+  });
   
   const supabase = createClient();
   const router = useRouter();
@@ -137,6 +157,7 @@ export default function MyPropertiesTable({
 
   if (loading && properties.length === 0) return <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2"><div className="animate-spin h-5 w-5 border-2 border-indigo-500 rounded-full border-t-transparent"></div> Cargando tus propiedades...</div>;
 
+  console.log(mounted, openMenuId === properties[0].id, menuPosition );
   if (!loading && properties.length === 0) {
     return (
       <motion.div 
@@ -267,7 +288,6 @@ export default function MyPropertiesTable({
               <th scope="col" className="w-[15%] px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Precio Venta</th>
               {viewMode !== 'advisor' && (
                 <>
-                  <th scope="col" className="w-[15%] px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Alquiler Est.</th>
                   <th scope="col" className="w-[10%] px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Rentabilidad</th>
                 </>
               )}
@@ -317,7 +337,7 @@ export default function MyPropertiesTable({
                         {property.is_listed ? (
                             <div className="mt-1 flex items-center gap-2">
                                 <span className="px-2 inline-flex text-[10px] leading-4 font-semibold rounded-full bg-green-100 text-green-800">
-                                    En Venta
+                                    Activa
                                 </span>
                                 {property.assigned_advisor ? (
                                     <span className="text-[10px] text-gray-500">
@@ -328,6 +348,12 @@ export default function MyPropertiesTable({
                                         • Buscando asesor...
                                     </span>
                                 )}
+                            </div>
+                        ) : property.listing_status === 'paused' ? (
+                            <div className="mt-1 flex items-center gap-2">
+                                <span className="px-2 inline-flex text-[10px] leading-4 font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                    Pausada
+                                </span>
                             </div>
                         ) : (
                              <div className="mt-1 flex items-center gap-2">
@@ -341,10 +367,10 @@ export default function MyPropertiesTable({
                                 >
                                     {publishingId === property.id ? '...' : (
                                         <>
-                                    {property.purpose === 'sale' ? 'venta' : 'Inversion'}
-                                </>
-                            )}
-                        </button>
+                                            {property.purpose === 'sale' ? 'Publicar Venta' : 'Publicar Inversión'}
+                                        </>
+                                    )}
+                                </button>
                              </div>
                         )}
                       </div>
@@ -372,9 +398,6 @@ export default function MyPropertiesTable({
                   </td>
                   {viewMode !== 'advisor' && (
                     <>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 cursor-pointer" onClick={() => router.push(`/my-properties/${property.id}`)}>
-                        ${property.rent_price.toLocaleString()}/mes
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center cursor-pointer relative" onClick={() => router.push(`/my-properties/${property.id}`)}>
                         <div className="flex flex-col items-center gap-1">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${healthStyle.bg} ${healthStyle.color} ${healthStyle.borderColor}`}>
@@ -422,10 +445,23 @@ export default function MyPropertiesTable({
                         
                         <button 
                             onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 const rect = e.currentTarget.getBoundingClientRect();
-                                setMenuPosition({ top: rect.bottom, right: window.innerWidth - rect.right });
-                                setOpenMenuId(openMenuId === property.id ? null : property.id);
+                                const menuHeight = 220;
+                                const spaceBelow = window.innerHeight - rect.bottom;
+                                
+                                let topPosition = rect.bottom + 8;
+                                // Flip up if close to bottom edge
+                                if (spaceBelow < menuHeight) {
+                                    topPosition = rect.top - menuHeight;
+                                }
+
+                                setMenuPosition({ 
+                                    top: topPosition, 
+                                    left: rect.right - 192 
+                                });
+                                setOpenMenuId(property.id);
                             }}
                             className={`p-2 rounded-xl transition-all border shadow-sm ${
                                 openMenuId === property.id 
@@ -448,8 +484,8 @@ export default function MyPropertiesTable({
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     className="fixed w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[110] py-2 overflow-hidden text-left"
                                     style={{ 
-                                        top: `${menuPosition.top + 8}px`, 
-                                        right: `${menuPosition.right}px` 
+                                        top: `${menuPosition.top}px`, 
+                                        left: `${menuPosition.left}px` 
                                     }}
                                 >
                                     <button 
@@ -474,15 +510,56 @@ export default function MyPropertiesTable({
                                         <Edit2 size={16} className="text-slate-400" />
                                         Editar Propiedad
                                     </button>
+                                    
+                                    {property.purpose === 'sale' && (
+                                        <button 
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (property.is_listed) {
+                                                    setConfirmModal({
+                                                        isOpen: true,
+                                                        title: '¿Pausar publicación?',
+                                                        message: 'La propiedad dejará de ser visible para los compradores, pero podrás reactivarla en cualquier momento.',
+                                                        confirmText: 'Si, pausar',
+                                                        cancelText: 'Cancelar',
+                                                        type: 'info',
+                                                        onConfirm: async () => {
+                                                            await pauseProperty(property.id);
+                                                            setProperties(prev => prev.map(p => p.id === property.id ? { ...p, is_listed: false } : p));
+                                                            toast.success('Publicación pausada exitosamente');
+                                                        }
+                                                    });
+                                                    setOpenMenuId(null);
+                                                } else {
+                                                    // Activate
+                                                    setOpenMenuId(null); // Close menu first
+                                                    handlePublish(property.id);
+                                                }
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                                        >
+                                            {property.is_listed ? <PauseCircle size={16} className="text-slate-400" /> : <PlayCircle size={16} className="text-slate-400" />}
+                                            {property.is_listed ? 'Pausar Publicación' : 'Activar Publicación'}
+                                        </button>
+                                    )}
                                     <div className="h-px bg-slate-100 my-1 mx-2"></div>
                                     <button 
                                         onClick={async (e) => {
                                             e.stopPropagation();
-                                            if(confirm('¿Estás seguro de eliminar esta propiedad?')) {
-                                                await deleteProperty(property.id);
-                                                setProperties(prev => prev.filter(p => p.id !== property.id));
-                                                setOpenMenuId(null);
-                                            }
+                                            setConfirmModal({
+                                                isOpen: true,
+                                                title: '¿Eliminar propiedad?',
+                                                message: 'Esta acción no se puede deshacer. Se eliminará toda la información asociada a esta propiedad.',
+                                                confirmText: 'Si, eliminar',
+                                                cancelText: 'Cancelar',
+                                                type: 'danger',
+                                                onConfirm: async () => {
+                                                     await deleteProperty(property.id);
+                                                     setProperties(prev => prev.filter(p => p.id !== property.id));
+                                                     toast.success('Propiedad eliminada');
+                                                }
+                                            });
+                                            setOpenMenuId(null);
                                         }}
                                         className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
                                     >
@@ -554,6 +631,51 @@ export default function MyPropertiesTable({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {mounted && confirmModal.isOpen && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+             onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}>
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+                <div className="p-6">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${confirmModal.type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {confirmModal.type === 'danger' ? <Trash2 size={24} /> : <AlertTriangle size={24} />}
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{confirmModal.title}</h3>
+                    <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                        {confirmModal.message}
+                    </p>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                            className="flex-1 px-4 py-2.5 bg-gray-50 text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors"
+                        >
+                            {confirmModal.cancelText}
+                        </button>
+                        <button 
+                            onClick={async () => {
+                                await confirmModal.onConfirm();
+                                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                            }}
+                            className={`flex-1 px-4 py-2.5 font-bold rounded-xl text-white transition-all shadow-lg active:scale-95 ${
+                                confirmModal.type === 'danger' 
+                                ? 'bg-red-600 hover:bg-red-700 shadow-red-200' 
+                                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                            }`}
+                        >
+                            {confirmModal.confirmText}
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </div>,
+        document.body
       )}
     </div>
   );

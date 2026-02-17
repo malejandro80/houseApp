@@ -75,7 +75,7 @@ export default function UserMenu({ user }: { user: User | null }) {
     { name: 'Feature Flags', href: '/admin/feature-flags', icon: Flag, roles: ['superadmin'] },
     { name: 'Solicitudes Asesores', href: '/admin/advisors', icon: Users, roles: ['superadmin'] },
     { name: 'Pipeline de Ventas', href: '/advisor/pipeline', icon: Trello, roles: ['asesor', 'superadmin'] },
-    { name: 'Bandeja de Leads', href: '/advisor/inbox', icon: MessageSquare, roles: ['asesor', 'superadmin'] },
+    { name: 'Mis Mensajes', href: '/advisor/inbox', icon: MessageSquare, roles: ['asesor', 'superadmin'] },
     { name: 'Billetera Digital', href: '/wallet', icon: Wallet, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Documentos Legales', href: '/advisor/documents', icon: FileText, roles: ['asesor', 'superadmin'] },
     { name: 'Mapa Global', href: '/map', icon: Map, roles: ['usuario', 'asesor', 'superadmin'] },

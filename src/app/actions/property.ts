@@ -60,19 +60,46 @@ export async function publishProperty(propertyId: string) {
     .update({ 
         is_listed: true,
         listing_status: 'active',
-        purpose: 'sale' // Force conversion to 'sale' type
+        accepted_listing_terms: true // Re-activating implies terms are accepted
     })
     .eq('id', propertyId)
     .eq('user_id', user.id); // Security: only owner
 
   if (error) {
     console.error('Error publishing property:', error);
-    return { error: 'Failed to publish property.' };
+    return { error: 'Failed to publish property: ' + error.message };
   }
 
   revalidatePath('/my-properties');
   revalidatePath('/map'); // Update public map if applicable
   return { success: true };
+}
+
+export async function pauseProperty(propertyId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+  
+    if (!user) {
+      return { error: 'Unauthorized' };
+    }
+  
+    const { error } = await supabase
+      .from('properties')
+      .update({
+          is_listed: false,
+          listing_status: 'paused'
+      })
+      .eq('id', propertyId)
+      .eq('user_id', user.id);
+  
+    if (error) {
+      console.error('Error pausing property:', error);
+      return { error: 'Failed to pause property: ' + error.message };
+    }
+  
+    revalidatePath('/my-properties');
+    revalidatePath('/map');
+    return { success: true };
 }
 
 export async function deleteProperty(propertyId: string) {
