@@ -59,6 +59,7 @@ ALTER TABLE public.legal_documents ENABLE ROW LEVEL SECURITY;
 
 -- Templates: 
 -- Admins can manage
+DROP POLICY IF EXISTS "Admins manage templates" ON public.contract_templates;
 CREATE POLICY "Admins manage templates" ON public.contract_templates
     FOR ALL USING (
         EXISTS (
@@ -68,12 +69,14 @@ CREATE POLICY "Admins manage templates" ON public.contract_templates
     );
 
 -- Advisors can view active templates
+DROP POLICY IF EXISTS "Advisors view active templates" ON public.contract_templates;
 CREATE POLICY "Advisors view active templates" ON public.contract_templates
     FOR SELECT USING (is_active = true);
 
 
 -- Documents:
 -- Advisors can view/create documents for properties they are assigned to
+DROP POLICY IF EXISTS "Advisors manage docs for assigned properties" ON public.legal_documents;
 CREATE POLICY "Advisors manage docs for assigned properties" ON public.legal_documents
     FOR ALL USING (
         EXISTS (
@@ -83,6 +86,7 @@ CREATE POLICY "Advisors manage docs for assigned properties" ON public.legal_doc
     );
 
 -- Admins view all
+DROP POLICY IF EXISTS "Admins view all documents" ON public.legal_documents;
 CREATE POLICY "Admins view all documents" ON public.legal_documents
     FOR SELECT USING (
         EXISTS (
@@ -92,11 +96,13 @@ CREATE POLICY "Admins view all documents" ON public.legal_documents
     );
 
 -- 7. Triggers for updated_at
+DROP TRIGGER IF EXISTS update_contract_templates_updated_at ON public.contract_templates;
 CREATE TRIGGER update_contract_templates_updated_at
     BEFORE UPDATE ON public.contract_templates
     FOR EACH ROW
     EXECUTE PROCEDURE update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_legal_documents_updated_at ON public.legal_documents;
 CREATE TRIGGER update_legal_documents_updated_at
     BEFORE UPDATE ON public.legal_documents
     FOR EACH ROW

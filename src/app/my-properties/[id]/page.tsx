@@ -3,32 +3,41 @@ import { notFound } from 'next/navigation';
 import PropertyDetailClient from '@/app/components/PropertyDetailClient';
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { id } = await params;
 
-  const { data: rawProperty, error } = await supabase
-    .from('properties')
-    .select(`
-      *,
-      owner:property_owners(*),
-      assigned_advisor:assigned_advisor_id(full_name)
-    `)
-    .eq('id', id)
-    .single();
+  // Parallel fetch: User session & Property Data
+  const [userResponse, propertyResponse] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from('properties')
+      .select(`
+        *,
+        owner:property_owners(*),
+        assigned_advisor:assigned_advisor_id(full_name)
+      `)
+      .eq('id', id)
+      .single()
+  ]);
+
+  const { data: { user } } = userResponse;
+  const { data: rawProperty, error } = propertyResponse;
 
   if (error || !rawProperty) {
     notFound();
   }
 
-  // RBAC: Check access permissions
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user?.id || '')
-    .single();
-
-  const role = profile?.role || 'usuario';
+  // Fetch role only if user exists (can be parallelized too if we had user ID beforehand, but we don't safely)
+  // Optimization: If no user, we know role is visitor.
+  let role = 'usuario';
+  if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      role = profile?.role || 'usuario';
+  }
   const isExpert = role === 'asesor' || role === 'superadmin';
   const isOwner = user?.id === rawProperty.user_id;
   const isPublicSale = rawProperty.is_listed && rawProperty.purpose === 'sale';

@@ -46,44 +46,55 @@ export async function updateSession(request: NextRequest) {
 
   // 3. Role-Based Access Control (RBAC) & Redirections
   if (user) {
-      // Fetch role from profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      
-      const role = profile?.role || 'usuario';
-      const isAdvisor = role === 'asesor' || role === 'superadmin';
+      // Optimization: Only fetch profile if the path requires role-based logic
+      // Paths that need role: /, /my-properties (exact for redirect), /advisor*, /admin*, /manage*
+      const needsRoleCheck = 
+          path === '/' || 
+          path === '/my-properties' || 
+          path.startsWith('/advisor') || 
+          path.startsWith('/admin') || 
+          path.startsWith('/manage');
 
-      // 3.1. Landing Page Redirection
-      if (path === '/') {
-          const url = request.nextUrl.clone()
-          url.pathname = isAdvisor ? '/advisor/dashboard' : '/my-properties'
-          return NextResponse.redirect(url)
-      }
+      if (needsRoleCheck) {
+          // Fetch role from profiles
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          
+          const role = profile?.role || 'usuario';
+          const isAdvisor = role === 'asesor' || role === 'superadmin';
 
-      // 3.2. Restrict My Properties LIST for Advisors (but allow details)
-      if (path === '/my-properties' && isAdvisor) {
-          const url = request.nextUrl.clone()
-          url.pathname = '/advisor/dashboard'
-          return NextResponse.redirect(url)
-      }
+          // 3.1. Landing Page Redirection
+          if (path === '/') {
+              const url = request.nextUrl.clone()
+              url.pathname = isAdvisor ? '/advisor/dashboard' : '/my-properties'
+              return NextResponse.redirect(url)
+          }
 
-      // 3.3. Restrict Advisor Dashboard for Regular Users
-      if (path.startsWith('/advisor') && !isAdvisor) {
-          const url = request.nextUrl.clone()
-          url.pathname = '/my-properties'
-          return NextResponse.redirect(url)
-      }
+          // 3.2. Restrict My Properties LIST for Advisors (but allow details)
+          if (path === '/my-properties' && isAdvisor) {
+              const url = request.nextUrl.clone()
+              url.pathname = '/advisor/dashboard'
+              return NextResponse.redirect(url)
+          }
 
-      // 3.4. Admin restrictions (keep existing)
-      if (path.startsWith('/admin') && role !== 'superadmin') {
-          return NextResponse.redirect(new URL('/', request.url));
-      }
+          // 3.3. Restrict Advisor Dashboard for Regular Users
+          if (path.startsWith('/advisor') && !isAdvisor) {
+              const url = request.nextUrl.clone()
+              url.pathname = '/my-properties'
+              return NextResponse.redirect(url)
+          }
 
-      if (path.startsWith('/manage') && !['superadmin', 'asesor'].includes(role)) {
-          return NextResponse.redirect(new URL('/', request.url));
+          // 3.4. Admin restrictions (keep existing)
+          if (path.startsWith('/admin') && role !== 'superadmin') {
+              return NextResponse.redirect(new URL('/', request.url));
+          }
+
+          if (path.startsWith('/manage') && !['superadmin', 'asesor'].includes(role)) {
+              return NextResponse.redirect(new URL('/', request.url));
+          }
       }
   }
 

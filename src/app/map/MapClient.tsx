@@ -31,6 +31,7 @@ export default function MapClient({ user }: { user: User | null }) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [filter, setFilter] = useState<'market' | 'sale' | 'investment'>('market');
+  const [propertyType, setPropertyType] = useState<'all' | 'house' | 'apartment' | 'land' | 'commercial'>('all');
   const currentBounds = useRef<L.LatLngBounds | null>(null);
 
   // Dynamically import map to avoid SSR issues
@@ -58,6 +59,11 @@ export default function MapClient({ user }: { user: User | null }) {
         .lte('lat', ne.lat)
         .gte('lon', sw.lng)
         .lte('lon', ne.lng);
+
+      // Apply Type Filter
+      if (propertyType !== 'all') {
+          query = query.eq('type', propertyType);
+      }
 
       if (user) {
           if (filter === 'market') {
@@ -91,7 +97,7 @@ export default function MapClient({ user }: { user: User | null }) {
     if (currentBounds.current) {
         fetchProperties(currentBounds.current);
     }
-  }, [filter]);
+  }, [filter, propertyType]);
 
   const handleBoundsChange = (bounds: L.LatLngBounds) => {
       currentBounds.current = bounds;
@@ -106,8 +112,30 @@ export default function MapClient({ user }: { user: User | null }) {
       <div className="absolute top-4 right-4 z-[400] flex flex-col items-end gap-2">
         <div className="bg-white/95 backdrop-blur-sm shadow-md rounded-full px-4 py-2 text-sm font-bold text-gray-800 border border-gray-200 flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isFetching ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
-            {properties.length} {filter === 'market' ? 'propiedades en mercado' : filter === 'sale' ? 'mis propiedades en venta' : 'mis análisis de inversión'}
+            {properties.length} {filter === 'market' ? 'propiedades en mercado' : filter === 'sale' ? 'mis ventas' : 'mis análisis'}
         </div>
+      </div>
+
+      {/* Property Type Filter (For Everyone) */}
+      <div className="absolute top-16 right-4 z-[400] flex flex-col items-end gap-2">
+          <div className="bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-lg border border-white/20 flex flex-col gap-1">
+            {['all', 'house', 'apartment', 'land', 'commercial'].map((type) => (
+                <button
+                    key={type}
+                    onClick={() => setPropertyType(type as any)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-right transition-all ${
+                        propertyType === type 
+                        ? 'bg-gray-900 text-white shadow-md' 
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                >
+                    {type === 'all' ? 'Todo' : 
+                     type === 'house' ? 'Casas' : 
+                     type === 'apartment' ? 'Aptos' : 
+                     type === 'land' ? 'Lotes' : 'Locales'}
+                </button>
+            ))}
+          </div>
       </div>
 
       {/* Filter Bar (Only for logged in users who are NOT advisors) */}

@@ -14,6 +14,7 @@ ALTER TABLE public.feature_flags ENABLE ROW LEVEL SECURITY;
 -- Policies
 -- 1. Everyone (or at least authenticated users, depending on strictness. Public read is often needed for login/landing flags) 
 --    Let's allow public read for now to prevent chicken-egg issues on landing pages.
+DROP POLICY IF EXISTS "Public read access" ON public.feature_flags;
 CREATE POLICY "Public read access" ON public.feature_flags
     FOR SELECT USING (true);
 
@@ -23,11 +24,12 @@ CREATE POLICY "Public read access" ON public.feature_flags
 --    This policy assumes a profile table check or simple auth check. 
 --    Let's make it strict: Only users with role 'admin' in public.profiles (if exists) or service_role.
 --    To keep it simple and robust for this step:
+DROP POLICY IF EXISTS "Admins can manage flags" ON public.feature_flags;
 CREATE POLICY "Admins can manage flags" ON public.feature_flags
     FOR ALL USING (
         EXISTS (
+            SELECT 1 FROM public.profiles
             WHERE id = auth.uid() AND role = 'superadmin'
-        )
         )
     );
 
@@ -40,6 +42,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_feature_flags_updated_at ON public.feature_flags;
 CREATE TRIGGER update_feature_flags_updated_at
     BEFORE UPDATE ON public.feature_flags
     FOR EACH ROW

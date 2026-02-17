@@ -55,10 +55,12 @@ ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
 
 -- Transactions:
 -- Users see their own transactions (as buyer)
+DROP POLICY IF EXISTS "Users view own transactions" ON public.transactions;
 CREATE POLICY "Users view own transactions" ON public.transactions
     FOR SELECT USING (auth.uid() = buyer_id);
 
 -- Admins see all
+DROP POLICY IF EXISTS "Admins view all transactions" ON public.transactions;
 CREATE POLICY "Admins view all transactions" ON public.transactions
     FOR SELECT USING (
         EXISTS (
@@ -69,10 +71,12 @@ CREATE POLICY "Admins view all transactions" ON public.transactions
 
 -- Wallets:
 -- Users see own wallet
+DROP POLICY IF EXISTS "Users view own wallet" ON public.wallets;
 CREATE POLICY "Users view own wallet" ON public.wallets
     FOR SELECT USING (auth.uid() = user_id);
 
 -- Admins see all wallets
+DROP POLICY IF EXISTS "Admins view all wallets" ON public.wallets;
 CREATE POLICY "Admins view all wallets" ON public.wallets
     FOR SELECT USING (
         EXISTS (
@@ -82,11 +86,13 @@ CREATE POLICY "Admins view all wallets" ON public.wallets
     );
 
 -- 7. Triggers for updated_at
+DROP TRIGGER IF EXISTS update_transactions_updated_at ON public.transactions;
 CREATE TRIGGER update_transactions_updated_at
     BEFORE UPDATE ON public.transactions
     FOR EACH ROW
     EXECUTE PROCEDURE update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_wallets_updated_at ON public.wallets;
 CREATE TRIGGER update_wallets_updated_at
     BEFORE UPDATE ON public.wallets
     FOR EACH ROW

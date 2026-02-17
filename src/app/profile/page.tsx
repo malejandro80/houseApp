@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { Loader2, Mail, Shield, Phone, Edit2, Save, X, Camera, MapPin } from "lucide-react";
+import { Mail, Shield, Phone, Edit2, Save, X, Camera, MapPin } from "lucide-react";
 import { ReputationCard } from "@/components/advisor/ReputationCard";
 import { toast } from "sonner"; 
+import { Spinner } from "@/components/ui/Spinner";
 
 interface Profile {
   id: string;
@@ -195,7 +196,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Spinner className="w-8 h-8 text-blue-600" />
       </div>
     );
   }
@@ -239,7 +240,7 @@ export default function ProfilePage() {
                         {/* Loading Overlay */}
                         {uploading && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                <Spinner className="w-8 h-8 text-white" />
                             </div>
                         )}
                     </div>

@@ -181,15 +181,11 @@ export default function PropertyDetailClient({
             </Link>
             <div className="flex flex-col">
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
-                {p.title || p.address}
+                {p.title || ((isExpert || p.isOwner) ? p.address : 'Propiedad Disponbible')}
               </h1>
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-[10px] font-black text-white bg-slate-900 px-2 py-0.5 rounded uppercase tracking-widest">
                   {p.purpose === 'investment' ? 'Inversión' : 'Venta'}
-                </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <MapPin size={10} />
-                  {p.address}
                 </span>
               </div>
             </div>
@@ -321,13 +317,15 @@ export default function PropertyDetailClient({
 
                     <div className="mt-8 pt-6 border-t border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <div>
-                                <span className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Ubicación</span>
-                                <div className="flex items-start gap-2 text-gray-900 font-medium">
-                                    <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                                    <span className="text-sm">{p.address}</span>
+                            {(isExpert || p.isOwner) && (
+                                <div>
+                                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Ubicación</span>
+                                    <div className="flex items-start gap-2 text-gray-900 font-medium">
+                                        <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                                        <span className="text-sm">{p.address}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             <div>
                                 <span className="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Tipo de Activo</span>
                                 <span className="capitalize px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-black ring-1 ring-blue-100">
@@ -385,12 +383,15 @@ export default function PropertyDetailClient({
                 </div>
 
                 {/* Map Section */}
-                {(p.lat && p.lon) && (
+                {(isExpert || p.isOwner) && p.lat && p.lon && (
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                             <MapPin className="text-blue-600" />
-                            Ubicación
+                            Ubicación Exacta
                         </h2>
+                        <div className="mb-4 p-3 bg-blue-50 text-blue-800 text-xs rounded-lg font-medium">
+                            📍 Visible solo para ti y asesores verificados.
+                        </div>
                         <PropertyMapWrapper lat={p.lat} lng={p.lon} title={p.title || p.address} />
                     </div>
                 )}

@@ -23,6 +23,7 @@ type Property = {
   lon: number;
   sale_price: number;
   rent_price: number;
+  area_total: number;
   cover_image?: string | null;
   user_id?: string | null;
   assigned_advisor_id?: string | null; 
@@ -209,7 +210,7 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
 
         {/* Render Properties */}
         {properties.map((property) => {
-          const { netReturn, health } = calculateProfitabilityForList(property.sale_price, property.rent_price);
+          const { netReturn, health, label } = calculateProfitabilityForList(property.sale_price, property.rent_price, property.type);
           const healthStyle = getHealthLabel(health);
           
           const isInvestment = (property as any).purpose === 'investment';
@@ -227,7 +228,7 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
               key={property.id} 
               position={[property.lat, property.lon]}
               icon={createColoredMarker(markerColor)}
-              alt={`Propiedad: ${property.title || 'Inmueble'}, Rentabilidad: ${netReturn.toFixed(1)}%`}
+              alt={`Propiedad: ${property.title || 'Inmueble'}, ${label}: ${netReturn.toFixed(1)}%`}
             >
               <Popup className="custom-popup" closeButton={false}>
                  <div className="p-0 min-w-[240px] max-w-[260px] font-sans pb-3">
@@ -278,7 +279,7 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                     {/* Profitability Hero (Glassmorphism look) */}
                     <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-4 mb-4 text-center border border-gray-100 shadow-inner relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Retorno Neto (ROI)</p>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">{label}</p>
                         <div className={`text-2xl font-black flex items-center justify-center gap-2 ${healthStyle.color.replace('600', '800')}`}>
                             <TrendingUp size={20} aria-hidden="true" strokeWidth={3} />
                             {netReturn.toFixed(1)}%
@@ -287,18 +288,58 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
 
                     {/* Key Metrics Grid */}
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
-                            <p className="text-[9px] font-bold text-gray-700 uppercase tracking-wider mb-1">Precio Venta</p>
-                            <p className="font-extrabold text-gray-900 text-sm">
-                                ${property.sale_price.toLocaleString()}
+                        <div className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50 overflow-hidden">
+                            <p className="text-[9px] font-bold text-gray-700 uppercase tracking-wider mb-1 truncate">Precio Venta</p>
+                            <p className="font-extrabold text-gray-900 text-sm truncate" title={`$${property.sale_price.toLocaleString()}`}>
+                                ${property.sale_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </p>
                         </div>
-                        <div className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
-                            <p className="text-[9px] font-bold text-gray-700 uppercase tracking-wider mb-1">Renta Est.</p>
-                            <p className="font-extrabold text-gray-900 text-sm">
-                                ${property.rent_price.toLocaleString()}<span className="text-[10px] text-gray-500">/m</span>
-                            </p>
-                        </div>
+                        
+                        {(property.type === 'land' || property.type === 'commercial') ? (
+                           // For Land/Commercial: Show Area or Price/m2
+                           <div className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50 overflow-hidden">
+                               <p className="text-[9px] font-bold text-gray-700 uppercase tracking-wider mb-1 truncate">Área Total</p>
+                               <p className="font-extrabold text-gray-900 text-sm truncate" title={`${property.area_total.toLocaleString()} m²`}>
+                                   {property.area_total.toLocaleString()} <span className="text-[10px] text-gray-500">m²</span>
+                               </p>
+                           </div>
+                        ) : (
+                           // For House/Apt: Show Rent or ROI estimate
+                           <div className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50 overflow-hidden">
+                               <p className="text-[9px] font-bold text-gray-700 uppercase tracking-wider mb-1 truncate">Renta Est.</p>
+                               <p className="font-extrabold text-gray-900 text-sm truncate" title={`$${property.rent_price.toLocaleString()}/m`}>
+                                   ${property.rent_price.toLocaleString()}<span className="text-[10px] text-gray-500">/m</span>
+                               </p>
+                           </div>
+                        )}
+                    </div>
+                    
+                    {/* Extra details row for Land/Commercial/Residential distinction */}
+                    <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+                         {/* Area (always relevant) */}
+                         <span className="text-[10px] font-bold text-gray-500 px-2 py-1 bg-gray-50 rounded-lg whitespace-nowrap border border-gray-100">
+                             <Radar size={10} className="inline mr-1" />
+                             {property.area_total} m²
+                         </span>
+                         
+                         {/* Conditionally show rooms/baths if relevant */}
+                         {(property.type === 'house' || property.type === 'apartment') && (
+                             <>
+                                 <span className="text-[10px] font-bold text-gray-500 px-2 py-1 bg-gray-50 rounded-lg whitespace-nowrap border border-gray-100">
+                                     🛏 {(property as any).bedrooms || 0}
+                                 </span>
+                                 <span className="text-[10px] font-bold text-gray-500 px-2 py-1 bg-gray-50 rounded-lg whitespace-nowrap border border-gray-100">
+                                     🚿 {(property as any).bathrooms || 0}
+                                 </span>
+                             </>
+                         )}
+
+                         {/* Always show parking if > 0 */}
+                         {((property as any).parking || 0) > 0 && (
+                             <span className="text-[10px] font-bold text-gray-500 px-2 py-1 bg-gray-50 rounded-lg whitespace-nowrap border border-gray-100">
+                                 🚗 {(property as any).parking}
+                             </span>
+                         )}
                     </div>
 
                     {/* Contact / Detail Action - ONLY FOR SALES */}
@@ -347,13 +388,14 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                             )
                         ) : (
                             <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
-                                <Link 
-                                    href={`/my-properties/${property.id}`}
-                                    className="block w-full py-3 bg-gray-900 hover:bg-black !text-white text-center rounded-2xl text-xs font-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
-                                >
-                                    Ver Propiedad
-                                    <ArrowRight size={14} />
-                                </Link>
+                                    <Link 
+                                        href={`/my-properties/${property.id}`}
+                                        prefetch={true}
+                                        className="block w-full py-3 bg-gray-900 hover:bg-black !text-white text-center rounded-2xl text-xs font-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        Ver Propiedad
+                                        <ArrowRight size={14} />
+                                    </Link>
                                 
                                 <p className="text-[10px] text-gray-500 mt-2 font-bold text-center leading-relaxed">
                                     Únete para contactar asesores y recibir <span className="text-blue-700 font-black italic">análisis exclusivos</span>.

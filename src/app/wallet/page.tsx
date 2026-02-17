@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCcw } from "lucide-react";
-import { formatCurrency } from "@/lib/utils"; // Assuming this exists, or use Intl
+import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCcw } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { Spinner } from "@/components/ui/Spinner";
 
 interface Transaction {
   id: string;
@@ -86,7 +87,7 @@ export default function WalletPage() {
           
           {loading ? (
             <div className="p-8 flex justify-center">
-              <Loader2 className="animate-spin text-blue-600" />
+              <Spinner className="text-blue-600 w-8 h-8" />
             </div>
           ) : transactions.length === 0 ? (
             <div className="p-12 text-center text-gray-500">

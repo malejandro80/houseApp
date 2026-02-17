@@ -17,25 +17,27 @@ export default function UserMenu({ user }: { user: User | null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [fullName, setFullName] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
   const { role, isAsesor, loading } = useUserRole();
 
   useEffect(() => {
     setMounted(true);
     
-    // Fetch profile name
-    async function fetchProfileName() {
+    // Fetch profile name & avatar
+    async function fetchProfileData() {
         if (!user) return;
         const { data } = await supabase
             .from('profiles')
-            .select('full_name')
+            .select('full_name, avatar_url')
             .eq('id', user.id)
             .single();
         
-        if (data?.full_name) {
-            setFullName(data.full_name);
+        if (data) {
+            if (data.full_name) setFullName(data.full_name);
+            if (data.avatar_url) setAvatar(data.avatar_url);
         }
     }
-    fetchProfileName();
+    fetchProfileData();
   }, [user]);
 
   // Close menu on route change
@@ -60,7 +62,7 @@ export default function UserMenu({ user }: { user: User | null }) {
     );
   }
 
-  const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+  const avatarUrl = avatar || user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const displayName = fullName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
 
   const allNavItems = [

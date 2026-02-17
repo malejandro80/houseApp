@@ -19,5 +19,6 @@ CREATE POLICY "Advisors can manage their own leads" ON public.leads
 -- Policy for public/authenticated users: Only INSERT inquiries
 -- We restrict this so they can only insert into the 'prospecto' stage (ideally)
 -- but for now let's allow insert with a basic check.
+DROP POLICY IF EXISTS "Users can submit inquiries" ON public.leads;
 CREATE POLICY "Users can submit inquiries" ON public.leads
     FOR INSERT WITH CHECK (true);

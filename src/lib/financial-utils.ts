@@ -9,17 +9,30 @@ export const getHealthLabel = (health: InvestmentHealth) => {
   }
 };
 
-export const calculateProfitabilityForList = (purchasePrice: number, estimatedRent: number): { netReturn: number, health: InvestmentHealth } => {
-  if (!purchasePrice || purchasePrice <= 0) return { netReturn: 0, health: 'risky' };
+export const calculateProfitabilityForList = (purchasePrice: number, estimatedRent: number, type?: string): { netReturn: number, health: InvestmentHealth, label: string } => {
+  if (!purchasePrice || purchasePrice <= 0) return { netReturn: 0, health: 'risky', label: 'ROI' };
   
-  const annualRent = estimatedRent * 12;
-  // Simple estimation for list view: 20% expenses
-  const netIncome = annualRent * 0.8; 
-  const roi = (netIncome / purchasePrice) * 100;
+  // Strategy 1: Land Banking (Pure Appreciation)
+  if (type === 'land') {
+      // Land typically appreciates 8-15% annually in developing areas
+      return { netReturn: 12.5, health: 'safe', label: 'Plusvalía' };
+  }
 
-  let health: InvestmentHealth = 'risky';
-  if (roi >= 6) health = 'safe';
-  else if (roi >= 4) health = 'average';
+  // Strategy 2: Rental Yield (Cap Rate)
+  if (estimatedRent > 0) {
+      const annualRent = estimatedRent * 12;
+      // Simple estimation: 20% expenses (management, vacancy, maintenance)
+      const netIncome = annualRent * 0.8; 
+      const roi = (netIncome / purchasePrice) * 100;
+      
+      let health: InvestmentHealth = 'risky';
+      if (roi >= 6) health = 'safe';
+      else if (roi >= 4) health = 'average';
 
-  return { netReturn: roi, health };
+      return { netReturn: roi, health, label: 'Cap Rate' };
+  }
+
+  // Strategy 3: Vacant Residential/Commercial (Standard Appreciation)
+  // If no rent is specified, we assume it's a pure equity play (buy & hold)
+  return { netReturn: 5.0, health: 'average', label: 'Plusvalía Est.' };
 };

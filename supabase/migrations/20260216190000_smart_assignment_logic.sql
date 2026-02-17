@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.assignment_logs (
 -- Enable RLS for logs
 ALTER TABLE public.assignment_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins view all assignment logs" ON public.assignment_logs;
 CREATE POLICY "Admins view all assignment logs" ON public.assignment_logs
     FOR SELECT USING (
         EXISTS (

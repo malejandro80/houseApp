@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState, Suspense } from 'react'
 import { toast } from 'sonner'
+import { Spinner } from '@/components/ui/Spinner'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 function LoginForm() {
@@ -110,7 +111,7 @@ function LoginForm() {
             className="flex w-full justify-center items-center gap-3 rounded-md bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-md ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-all transform hover:scale-[1.02]"
           >
             {loading ? (
-                <div className="animate-spin h-5 w-5 border-2 border-gray-500 border-t-transparent rounded-full" />
+                <Spinner className="text-gray-500 h-5 w-5" />
             ) : (
                 <>
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -210,7 +211,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        <Spinner className="h-8 w-8 text-indigo-600" />
       </div>
     }>
       <LoginForm />

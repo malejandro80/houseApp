@@ -26,6 +26,7 @@ ALTER TABLE public.reputation_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policies for advisor_metrics
 -- Public read (for showing badges on listings)
+DROP POLICY IF EXISTS "Public read metrics" ON public.advisor_metrics;
 CREATE POLICY "Public read metrics" ON public.advisor_metrics
     FOR SELECT USING (true);
 
@@ -34,10 +35,12 @@ CREATE POLICY "Public read metrics" ON public.advisor_metrics
 
 -- Policies for reputation_logs
 -- Advisors can see their own logs
+DROP POLICY IF EXISTS "Advisors view own logs" ON public.reputation_logs;
 CREATE POLICY "Advisors view own logs" ON public.reputation_logs
     FOR SELECT USING (auth.uid() = advisor_id);
 
 -- Trigger for metrics updated_at
+DROP TRIGGER IF EXISTS update_advisor_metrics_updated_at ON public.advisor_metrics;
 CREATE TRIGGER update_advisor_metrics_updated_at
     BEFORE UPDATE ON public.advisor_metrics
     FOR EACH ROW

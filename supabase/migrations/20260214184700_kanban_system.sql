@@ -46,10 +46,13 @@ ALTER TABLE kanban_stages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 
 -- Policies for kanban_stages (Read for all authenticated users)
+-- Policies for kanban_stages (Read for all authenticated users)
+DROP POLICY IF EXISTS "Everyone can view stages" ON kanban_stages;
 CREATE POLICY "Everyone can view stages" ON kanban_stages
     FOR SELECT USING (auth.role() = 'authenticated');
 
 -- Policies for leads (CRUD for the assigned advisor)
+DROP POLICY IF EXISTS "Advisors can manage their own leads" ON leads;
 CREATE POLICY "Advisors can manage their own leads" ON leads
     FOR ALL USING (auth.uid() = advisor_id);
 
