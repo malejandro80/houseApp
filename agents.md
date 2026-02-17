@@ -7,7 +7,7 @@ This project is a Fullstack application built with Next.js 15+ (App Router) and 
 This project uses a specialized agentic workflow coordinate from `.antigravity/agents/`:
 
 ### 📦 Product Squad (`/agents/product`)
-- **CEO-Orchestrator:** Lead Coordination & Strategic Vision (Ex-Big Tech).
+- **LEAD PRODUCT:** Strategy & Coordination (Orchestrated by PM).
 - **PM:** Product Strategy & Requirements.
 - **Copywriter:** Content Strategy, Tone & Voice (Spanish).
 - **UX/UI:** Design System & User Experience.
@@ -16,14 +16,24 @@ This project uses a specialized agentic workflow coordinate from `.antigravity/a
 - **Creative Visionary:** Innovation & Aesthetics.
 - **Accountant:** Financial Stability & Pricing.
 - **Lawyer:** Legal Compliance & Risk.
+- **Customer Success:** User Support & Onboarding (New).
 
 ### 🛠 Tech Squad (`/agents/tech`)
-- **Database Analyst:** Supabase Schema & ACID Security.
-- **Backend Dev:** Server Actions & Supabase Logic.
-- **Frontend Dev:** React & Leaflet Implementation.
-- **Security Expert:** RLS Hardening & Auth Security.
-- **QA:** Quality Assurance & Testing.
-- **DevOps:** CI/CD & Build Verification.
+- **CTO:** Strategic Architect & Orchestrator (`cto.md`).
+- **AI:** Automation & LLMs (`ai.md`).
+- **DATA:** Analytics (`data.md`).
+- **SEC:** Security Expert (`security.md`).
+- **QA:** Quality Assurance (`qa.md`).
+- **OPS:** DevOps (`devops.md`).
+
+#### 💼 Business Cell (`/tech/business`)
+- **BACKEND:** Core Logic (`backend.md`).
+- **FRONTEND:** Product UI (`frontend.md`).
+- **DB:** Database Analyst (`database.md`).
+
+#### 💳 Payments Cell (`/tech/payments`)
+- **BACKEND:** Gateways (`backend.md`).
+- **FRONTEND:** Checkout (`frontend.md`).
 
 ## 🛠 Technical Standards (The Golden Rules)
 1. **Architecture:** All application code MUST reside in the `/src` directory (`/src/app`, `/src/components`, `/src/actions`, etc.).
@@ -50,6 +60,9 @@ This project uses a specialized agentic workflow coordinate from `.antigravity/a
 5. **Release (Auto):** Commit executes WITHOUT asking. Build check runs afterward.
 
 ## 💬 Communication
+- **Language Standard**: All code, database schemas, types, variables, and comments must be in **English**. Spanish is allowed only for user-facing UI text (copy).
+- **Communication**: Agents may communicate with the user in Spanish if the user addresses them in Spanish, but technical artifacts must remain in English where applicable (code).
+- **Feature Flags**: ALL new features must be wrapped in a Feature Flag. No direct commits to production logic without a flag.
 - Agents must communicate through the Orchestrator.
 - Use **Artifacts** to display complex plans, SQL migrations, or UI previews.
 - Maintain a concise, technical, and objective tone.

@@ -19,6 +19,9 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
   - Server Action files must include `'use server'` at the top.
 - **No comments in code (self-documenting).**
 - **No file exceeds 500 lines.**
+- **Code Standards**: Write clean, modular, and reusable code. Follow RESTful principles for API design.
+  - **Language**: All database schemas, tables, columns, and internal variables MUST be in **English**.
+  - **Feature Flags**: Every new endpoint or logic path MUST be controlled by a row in the `feature_flags` table.
 - **Mobile-First:** Always design and develop with mobile as the primary target. Desktop is an enhancement. 
 
 ## 💻 Coding Standards

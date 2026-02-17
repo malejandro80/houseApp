@@ -19,13 +19,15 @@ export default async function MyPropertiesPage() {
   // Fallback: Redirect advisors to their dedicated console
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single();
 
   if (profile?.role === 'asesor' || profile?.role === 'superadmin') {
     return redirect('/advisor/dashboard');
   }
+
+  const displayName = profile?.full_name || user.email?.split('@')[0];
 
   return (
     <main className="min-h-screen bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">
@@ -40,7 +42,7 @@ export default async function MyPropertiesPage() {
                         Consola de <span className="text-blue-600">Inversión</span>
                     </h1>
                     <p className="mt-2 text-sm text-gray-500 font-medium">
-                        Bienvenido de nuevo, {user.email?.split('@')[0]}. Gestiona tu portafolio y acelera tus ventas.
+                        Bienvenido de nuevo, {displayName}. Gestiona tu portafolio y acelera tus ventas.
                     </p>
                 </div>
                 <div className="mt-6 flex flex-col sm:flex-row gap-3 md:ml-4 md:mt-0">

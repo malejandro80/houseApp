@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem, Trello, MessageSquare, ShieldCheck, Users } from 'lucide-react';
+import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem, Trello, MessageSquare, ShieldCheck, Users, User as UserIcon, Flag, Wallet, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserRole } from '@/hooks/useUserRole';
 import { createPortal } from 'react-dom';
@@ -16,11 +16,27 @@ export default function UserMenu({ user }: { user: User | null }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [fullName, setFullName] = useState<string | null>(null);
   const { role, isAsesor, loading } = useUserRole();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Fetch profile name
+    async function fetchProfileName() {
+        if (!user) return;
+        const { data } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+        
+        if (data?.full_name) {
+            setFullName(data.full_name);
+        }
+    }
+    fetchProfileName();
+  }, [user]);
 
   // Close menu on route change
   useEffect(() => {
@@ -45,17 +61,21 @@ export default function UserMenu({ user }: { user: User | null }) {
   }
 
   const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
-  const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
+  const displayName = fullName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
 
   const allNavItems = [
+    { name: 'Mi Perfil', href: '/profile', icon: UserIcon, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Registrar Propiedad', href: '/calculator', icon: Calculator, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Mis Propiedades', href: '/my-properties', icon: Building2, roles: ['usuario'] },
     { name: 'Mis Mensajes', href: '/my-properties/messages', icon: MessageSquare, roles: ['usuario'] },
     { name: 'Consola de Asesor', href: '/advisor/dashboard', icon: BarChart3, roles: ['asesor', 'superadmin'] },
     { name: 'Panel Maestro', href: '/admin', icon: ShieldCheck, roles: ['superadmin'] },
+    { name: 'Feature Flags', href: '/admin/feature-flags', icon: Flag, roles: ['superadmin'] },
     { name: 'Solicitudes Asesores', href: '/admin/advisors', icon: Users, roles: ['superadmin'] },
     { name: 'Pipeline de Ventas', href: '/advisor/pipeline', icon: Trello, roles: ['asesor', 'superadmin'] },
     { name: 'Bandeja de Leads', href: '/advisor/inbox', icon: MessageSquare, roles: ['asesor', 'superadmin'] },
+    { name: 'Billetera Digital', href: '/wallet', icon: Wallet, roles: ['usuario', 'asesor', 'superadmin'] },
+    { name: 'Documentos Legales', href: '/advisor/documents', icon: FileText, roles: ['asesor', 'superadmin'] },
     { name: 'Mapa Global', href: '/map', icon: Map, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Membresía', href: '/pricing', icon: Gem, roles: ['usuario'] },
     { name: 'Conviértete en Asesor', href: '/advisor-registration', icon: UserCircle, roles: ['usuario'] },

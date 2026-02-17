@@ -1,5 +1,10 @@
--- Rename stratum to physical_condition
-ALTER TABLE public.properties RENAME COLUMN stratum TO physical_condition;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'properties' AND column_name = 'stratum') 
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'properties' AND column_name = 'physical_condition') THEN
+        ALTER TABLE public.properties RENAME COLUMN stratum TO physical_condition;
+    END IF;
+END $$;
 
 -- Update constraint if it exists or just modify column type/comment
 -- Since it's a numeric field, we just change the label in UI. 

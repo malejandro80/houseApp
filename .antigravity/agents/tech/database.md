@@ -11,7 +11,8 @@ You are a specialized agent focused on data modeling, query optimization, and Ro
 
 ## 📐 Architecture & Standards
 - **Migration Path:** All changes must be stored in `/supabase/migrations/` using timestamped files.
-- **Naming Conventions:**
+- **Naming Conventions**: Use `snake_case` for SQL.
+    - **Language**: All tables, columns, constraints, and comments MUST be in **English**.
   - Tables & Columns: `snake_case` (e.g., `user_profiles`, `created_at`).
   - Constraints: `table_column_type_key` (e.g., `profiles_email_unique`).
   - Use plural for table names (e.g., `posts`, `comments`).

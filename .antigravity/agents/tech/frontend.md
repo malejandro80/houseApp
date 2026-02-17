@@ -35,6 +35,9 @@ You are a specialized agent focused on building high-performance, accessible, an
 - **State Management:** Avoid `'use client'` for data fetching. Leverage Next.js SSR and `nuqs` for state that should persist in the URL.
 - **No comments in code (self-documenting).**
 - **No file exceeds 500 lines.**
+- **Code Standards**: Write clean, modular, and reusable code. Follow Mobile-First principles.
+    - **Language**: All component names, props, functions, and internal variables MUST be in **English**. Spanish is for UI copy only.
+    - **Feature Flags**: Wrap new UI components in a Feature Flag check.
 - **Mobile-First:** Always design and develop with mobile as the primary target. Desktop is an enhancement. 
 
 
