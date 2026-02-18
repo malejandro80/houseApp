@@ -25,6 +25,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  MouseSensor,
+  TouchSensor,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -130,9 +132,15 @@ export default function PropertyForm({
   );
   
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
         activationConstraint: {
-            distance: 8,
+            distance: 10,
+        },
+    }),
+    useSensor(TouchSensor, {
+        activationConstraint: {
+            delay: 250,
+            tolerance: 5,
         },
     }),
     useSensor(KeyboardSensor, {

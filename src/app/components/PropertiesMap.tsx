@@ -48,6 +48,8 @@ type PropertiesMapProps = {
   user?: User | null;
   onBoundsChange?: (bounds: L.LatLngBounds) => void;
   children?: React.ReactNode;
+  isAnalyzerOpen: boolean;
+  onAnalyzerClose: () => void;
 };
 
 function MapController({ 
@@ -76,8 +78,8 @@ function MapController({
   return null;
 }
 
-export default function PropertiesMap({ properties, user, onBoundsChange, children }: PropertiesMapProps) {
-  const { isAsesor } = useUserRole();
+export default function PropertiesMap({ properties, user, onBoundsChange, children, isAnalyzerOpen, onAnalyzerClose }: PropertiesMapProps) {
+  const { isAsesor, isSuperAdmin } = useUserRole();
   // Center: Mexico City default or first property
   const defaultCenter: [number, number] = properties.length > 0
     ? [properties[0].lat, properties[0].lon]
@@ -86,7 +88,6 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
   const [mapCenter, setMapCenter] = useState<L.LatLng>(new L.LatLng(defaultCenter[0], defaultCenter[1]));
   
   // Analyzer State
-  const [isAnalyzerOpen, setIsAnalyzerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'radar' | 'my-zones'>('radar');
   const [radius, setRadius] = useState<number>(1); // Default 1km
   
@@ -174,7 +175,7 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
   };
 
   const handleOpenAnalyzer = () => {
-    setIsAnalyzerOpen(true);
+    // setIsAnalyzerOpen(true); // Handled by parent now
   };
 
   const handleMapClick = (latlng: L.LatLng) => {
@@ -450,30 +451,11 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
         )}
       </MapContainer>
       
-      {/* Floating Action Button (Top-Left) - Only for regular users */}
-      <AnimatePresence>
-      {!isAnalyzerOpen && !isAsesor && (
-        <motion.button 
-           initial={{ scale: 0, opacity: 0 }}
-           animate={{ scale: 1, opacity: 1 }}
-           exit={{ scale: 0, opacity: 0 }}
-           whileHover={{ scale: 1.05 }}
-           whileTap={{ scale: 0.95 }}
-           onClick={handleOpenAnalyzer}
-           className="absolute top-4 left-16 bg-white/80 backdrop-blur-md shadow-xl border border-white/20 z-[400] py-2 px-6 rounded-full hover:bg-white text-gray-700 flex items-center gap-2 font-bold text-sm tracking-tight transition-all duration-300"
-           aria-label="Abrir Radar de Oportunidades"
-        >
-           <div className="bg-blue-600 p-1 rounded-full">
-            <Radar className="text-white w-3 h-3 animate-pulse" />
-           </div>
-           <span>Radar de Oportunidades</span>
-        </motion.button>
-      )}
-      </AnimatePresence>
+      {/* Floating Action Button Removed - Moved to Utilities Menu */}
 
       {/* Analyzer Drawer - LEFT aligned - Only for regular users */}
       <AnimatePresence>
-      {isAnalyzerOpen && !isAsesor && (
+      {isAnalyzerOpen && (!isAsesor || isSuperAdmin) && (
         <motion.div 
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -486,7 +468,7 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                     <Radar className="w-5 h-5 animate-pulse" />
                     <h3 className="font-bold text-sm uppercase tracking-widest" id="radar-title">Radar de Mercado</h3>
                 </div>
-                <button onClick={() => setIsAnalyzerOpen(false)} className="p-1 hover:bg-white/20 rounded-full transition-colors" aria-label="Cerrar radar">
+                <button onClick={onAnalyzerClose} className="p-1 hover:bg-white/20 rounded-full transition-colors" aria-label="Cerrar radar">
                     <X size={16} aria-hidden="true" />
                 </button>
             </div>
@@ -706,12 +688,14 @@ export default function PropertiesMap({ properties, user, onBoundsChange, childr
                                         >
                                             Ver Mapa
                                         </button>
-                                        <Link 
-                                            href={`/zone-stats/${zone.id}`}
-                                            className="flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-1 active:scale-95"
-                                        >
-                                            Insights
-                                        </Link>
+                                        {isSuperAdmin && (
+                                            <Link 
+                                                href="/zone-stats"
+                                                className="flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-1 active:scale-95"
+                                            >
+                                                Insights
+                                            </Link>
+                                        )}
                                     </div>
                                 </motion.div>
                             ))

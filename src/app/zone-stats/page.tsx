@@ -8,7 +8,12 @@ import Link from 'next/link';
 import InfoTooltip from '@/app/components/Tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useUserRole } from '@/hooks/useUserRole';
+import { useRouter } from 'next/navigation';
+
 export default function ZoneStatsPage() {
+  const { isSuperAdmin, loading: roleLoading } = useUserRole();
+  const router = useRouter();
   const [zones, setZones] = useState<Zone[]>([]);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
   const [history, setHistory] = useState<ZoneHistory[]>([]);
@@ -17,14 +22,32 @@ export default function ZoneStatsPage() {
   const [isZoneSelectorOpen, setIsZoneSelectorOpen] = useState(false);
 
   useEffect(() => {
-    loadZones();
-  }, []);
+    if (!roleLoading && !isSuperAdmin) {
+        router.push('/map');
+    }
+  }, [isSuperAdmin, roleLoading, router]);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+        loadZones();
+    }
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (selectedZone) {
       fetchHistory(selectedZone.id);
     }
   }, [selectedZone]);
+
+  if (roleLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      );
+  }
+
+  if (!isSuperAdmin) return null;
 
   const loadZones = async () => {
     try {
