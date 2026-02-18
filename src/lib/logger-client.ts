@@ -11,7 +11,7 @@ interface ErrorLog {
 
 export const logClientError = async (error: any, context: string, userId?: string, metadata?: any) => {
   // Always log to console for immediate debugging
-  console.error(, error);
+  console.error(`[Client Error] ${context}:`, error);
 
   // Show user-friendly toast
   toast.error('Ocurrió un error inesperado al procesar su solicitud.');

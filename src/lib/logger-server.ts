@@ -9,7 +9,7 @@ interface ServerErrorLog {
 }
 
 export const logServerError = async (error: any, context: string, userId?: string, metadata?: any) => {
-  console.error(, error);
+  console.error(`[Server Error] ${context}:`, error);
 
   try {
     const supabase = await createClient();

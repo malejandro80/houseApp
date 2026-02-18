@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 export const logError = async (error: any, context: string, userId?: string) => {
-  console.error(, error);
+  console.error(context, error);
 
   const supabase = createClient();
   const errorMessage = error instanceof Error ? error.message : String(error);
