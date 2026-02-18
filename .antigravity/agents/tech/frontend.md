@@ -26,6 +26,10 @@ You are a specialized agent focused on building high-performance, accessible, an
   - Avoid `enums`; use constant maps instead.
 - **Conciseness:** Avoid unnecessary curly braces in conditionals. Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`).
 - **File Blueprint:** 1. Exported component -> 2. Subcomponents -> 3. Helpers -> 4. Static Content -> 5. Interfaces.
+- **Error Handling & Logging:** 
+  - Wrap all user interactions and effects in `try-catch` blocks.
+  - In the `catch` block, YOU MUST utilize `logClientError` from `@/lib/logger-client` to record the error in Supabase.
+  - Display a user-friendly error message using `toast.error()` (e.g., "Ocurrió un error inesperado...").
 
 ## 🚀 Performance & Optimization
 - **RSC First:** Favor React Server Components. Limit `'use client'` to small, leaf-level components requiring Web APIs or interactivity.

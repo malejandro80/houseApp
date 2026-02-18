@@ -11,6 +11,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import ContactAdvisorModal from '@/app/components/ContactAdvisorModal';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { logClientError } from '@/lib/logger-client';
 
 interface PropertyDetail {
   id: string;
@@ -106,10 +107,15 @@ export default function PropertyDetailClient({
         return;
       }
 
-      await supabase
-        .from('properties')
-        .update({ view_count: (p.view_count || 0) + 1 })
-        .eq('id', p.id);
+      try {
+          await supabase
+            .from('properties')
+            .update({ view_count: (p.view_count || 0) + 1 })
+            .eq('id', p.id);
+      } catch (error) {
+          // Silent fail for analytics but log it
+          logClientError(error, 'PropertyDetailClient.incrementView', user?.id, { propertyId: p.id });
+      }
     };
 
     incrementView();

@@ -27,7 +27,10 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
 ## 💻 Coding Standards
 - **Functional Logic:** Use functional programming patterns; avoid classes for service layers.
 - **Strict Validation:** Use **Zod** to validate all input data in Server Actions before processing.
-- **Error Handling:** Use a consistent result object pattern: `{ data: T | null, error: string | null }`.
+- **Error Handling & Logging:**
+  - Every Server Action, Route Handler, or API endpoint MUST be wrapped in a `try-catch` block.
+  - In the `catch` block, YOU MUST utilize `logServerError` (imported from `@/lib/logger-server` or `@/app/actions/error-logging`) to record the error.
+  - Return a structured error object `{ error: string }` so the frontend can display a user-friendly message, while the backend logs the technical details.
 - **TypeScript:** Use interfaces for data structures. Always use generated types from Supabase (`Database['public']['Tables'][...]`).
 - **PGRST Schema Sync:** If you encounter a 'column not found' error (PGRST204) after a database change, you must inform the user to manually reload the schema cache in the Supabase Dashboard SQL Editor using: `NOTIFY pgrst, 'reload schema';`.
 

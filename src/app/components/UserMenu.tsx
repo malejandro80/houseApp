@@ -9,6 +9,7 @@ import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserRole } from '@/hooks/useUserRole';
 import { createPortal } from 'react-dom';
+import { logClientError } from '@/lib/logger-client';
 
 export default function UserMenu({ user }: { user: User | null }) {
   const supabase = createClient();
@@ -26,15 +27,21 @@ export default function UserMenu({ user }: { user: User | null }) {
     // Fetch profile name & avatar
     async function fetchProfileData() {
         if (!user) return;
-        const { data } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', user.id)
-            .single();
-        
-        if (data) {
-            if (data.full_name) setFullName(data.full_name);
-            if (data.avatar_url) setAvatar(data.avatar_url);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('id', user.id)
+                .single();
+            
+            if (error) throw error;
+
+            if (data) {
+                if (data.full_name) setFullName(data.full_name);
+                if (data.avatar_url) setAvatar(data.avatar_url);
+            }
+        } catch (error) {
+            logClientError(error, 'UserMenu.fetchProfileData', user.id);
         }
     }
     fetchProfileData();
@@ -46,9 +53,14 @@ export default function UserMenu({ user }: { user: User | null }) {
   }, [pathname]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        router.push('/');
+        router.refresh();
+    } catch (error) {
+        logClientError(error, 'UserMenu.handleSignOut', user?.id);
+    }
   };
 
   if (!user) {

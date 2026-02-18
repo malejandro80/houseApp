@@ -55,6 +55,7 @@ import {
     KanbanStageWithLeads,
     Lead
 } from '@/app/actions/leads';
+import { logClientError } from '@/lib/logger-client';
 
 export default function KanbanBoard() {
     const [columns, setColumns] = useState<KanbanStageWithLeads[]>([]);
@@ -73,8 +74,7 @@ export default function KanbanBoard() {
             const data = await getKanbanData();
             setColumns(data);
         } catch (error) {
-            console.error('Error fetching kanban data:', error);
-            toast.error('Error al cargar los prospectos');
+            logClientError(error, 'KanbanBoard.fetchData');
         } finally {
             setIsLoading(false);
         }
@@ -211,8 +211,7 @@ export default function KanbanBoard() {
                 toast.success('Movido correctamente');
             }
         } catch (err) {
-            console.error('Sync error:', err);
-            toast.error('Error al guardar cambios');
+            logClientError(err, 'KanbanBoard.handleDragEnd');
             fetchData(); // Revert state from DB
         } finally {
             setInitialStageId(null);
@@ -226,8 +225,7 @@ export default function KanbanBoard() {
             setIsModalOpen(false);
             toast.success('Añadido satisfactoriamente');
         } catch (error) { 
-            console.error('Error adding task:', error);
-            toast.error('Error al crear el prospecto'); 
+            logClientError(error, 'KanbanBoard.handleAddTask'); 
         }
     };
 
@@ -242,8 +240,7 @@ export default function KanbanBoard() {
             setIsModalOpen(false);
             toast.success('Actualizado correctamente');
         } catch (error) { 
-            console.error('Error updating task:', error);
-            toast.error('Error al actualizar'); 
+            logClientError(error, 'KanbanBoard.handleUpdateLead', undefined, { leadId });
         }
     };
 
@@ -257,8 +254,7 @@ export default function KanbanBoard() {
             setLeadToDelete(null);
             toast.success('Eliminado');
         } catch (error) { 
-            console.error('Error deleting task:', error);
-            toast.error('Error al eliminar'); 
+            logClientError(error, 'KanbanBoard.handleDeleteLead', undefined, { leadId }); 
         }
     };
 

@@ -12,6 +12,7 @@ import { es } from 'date-fns/locale';
 import { publishProperty, deleteProperty, pauseProperty } from '@/app/actions/property';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { logClientError } from '@/lib/logger-client';
 
 interface SavedProperty {
   id: string;
@@ -120,7 +121,7 @@ export default function MyPropertiesTable({
         .range(from, to);
 
       if (error) {
-        console.error('Error fetching properties:', error);
+        logClientError(error, 'MyPropertiesTable.fetchProperties', userId);
       } else {
         setProperties(data as SavedProperty[]);
         if (count !== null) setTotalCount(count);
@@ -140,14 +141,13 @@ export default function MyPropertiesTable({
                 router.push('/pricing');
             }
         } else if (result.error) {
-            toast.error('Error al publicar la propiedad');
+            logClientError(result.error, 'MyPropertiesTable.handlePublish', userId, { propertyId });
         } else {
             // Reload to show changes (assigned advisor etc)
             window.location.reload();
         }
     } catch (e) {
-        console.error(e);
-        toast.error('Error inesperado');
+        logClientError(e, 'MyPropertiesTable.handlePublish', userId, { propertyId });
     } finally {
         setPublishingId(null);
     }
@@ -590,9 +590,13 @@ export default function MyPropertiesTable({
                                           cancelText: 'Cancelar',
                                           type: 'info',
                                           onConfirm: async () => {
-                                              await pauseProperty(activeProperty.id);
-                                              setProperties(prev => prev.map(p => p.id === activeProperty.id ? { ...p, is_listed: false } : p));
-                                              toast.success('Publicación pausada exitosamente');
+                                                try {
+                                                    await pauseProperty(activeProperty.id);
+                                                    setProperties(prev => prev.map(p => p.id === activeProperty.id ? { ...p, is_listed: false } : p));
+                                                    toast.success('Publicación pausada exitosamente');
+                                                } catch (error) {
+                                                    logClientError(error, 'MyPropertiesTable.pauseProperty', userId, { propertyId: activeProperty.id });
+                                                }
                                           }
                                       });
                                       setOpenMenuId(null);
@@ -620,9 +624,13 @@ export default function MyPropertiesTable({
                                   cancelText: 'Cancelar',
                                   type: 'danger',
                                   onConfirm: async () => {
-                                        await deleteProperty(activeProperty.id);
-                                        setProperties(prev => prev.filter(p => p.id !== activeProperty.id));
-                                        toast.success('Propiedad eliminada');
+                                        try {
+                                            await deleteProperty(activeProperty.id);
+                                            setProperties(prev => prev.filter(p => p.id !== activeProperty.id));
+                                            toast.success('Propiedad eliminada');
+                                        } catch (error) {
+                                            logClientError(error, 'MyPropertiesTable.deleteProperty', userId, { propertyId: activeProperty.id });
+                                        }
                                   }
                               });
                               setOpenMenuId(null);
