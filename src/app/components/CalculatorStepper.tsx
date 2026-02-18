@@ -16,7 +16,7 @@ export default function CalculatorStepper({ step, purpose = 'investment' }: { st
   return (
     <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 mb-8 w-full relative overflow-hidden">
         {/* Background Decorative */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
         <div className="relative z-10">
            
@@ -26,7 +26,7 @@ export default function CalculatorStepper({ step, purpose = 'investment' }: { st
                 <div className="absolute left-0 right-0 top-5 h-1 bg-transparent -z-20 flex items-center px-4">
                     <div className="w-full h-1 bg-gray-100 rounded-full absolute" />
                     <div 
-                        className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out absolute left-0" 
+                        className="h-full bg-indigo-600 rounded-full transition-all duration-500 ease-out absolute left-0" 
                         style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
                     />
                 </div>
@@ -42,11 +42,11 @@ export default function CalculatorStepper({ step, purpose = 'investment' }: { st
                                 initial={false}
                                 animate={{ 
                                     scale: isCurrent ? 1.1 : 1,
-                                    backgroundColor: isCurrent || isCompleted ? '#2563eb' : '#ffffff',
-                                    borderColor: isCurrent || isCompleted ? '#2563eb' : '#e5e7eb'
+                                    backgroundColor: isCurrent || isCompleted ? '#4f46e5' : '#ffffff',
+                                    borderColor: isCurrent || isCompleted ? '#4f46e5' : '#e5e7eb'
                                 }}
                                 className={`w-10 h-10 rounded-full border-2 flex items-center justify-center relative z-10 shadow-sm transition-colors duration-300
-                                    ${isCurrent || isCompleted ? 'text-white shadow-blue-200 shadow-lg' : 'text-gray-400 bg-white'}`}
+                                    ${isCurrent || isCompleted ? 'text-white shadow-indigo-200 shadow-lg' : 'text-gray-400 bg-white'}`}
                             >
                                 {isCompleted ? (
                                     <Check size={18} className="font-bold" />
@@ -56,11 +56,11 @@ export default function CalculatorStepper({ step, purpose = 'investment' }: { st
                                 
                                 {/* Pulse Effect for Current */}
                                 {isCurrent && (
-                                    <span className="absolute inset-0 rounded-full bg-blue-400 opacity-20 animate-ping" />
+                                    <span className="absolute inset-0 rounded-full bg-indigo-400 opacity-20 animate-ping" />
                                 )}
                             </motion.div>
                             
-                            <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${isCurrent ? 'text-blue-700' : isCompleted ? 'text-blue-600' : 'text-gray-500'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${isCurrent ? 'text-indigo-700' : isCompleted ? 'text-indigo-600' : 'text-gray-500'}`}>
                                 {s.label}
                             </span>
                         </div>

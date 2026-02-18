@@ -165,9 +165,9 @@ export default function MyPropertiesTable({
         animate={{ opacity: 1, scale: 1 }}
         className="text-center p-12 bg-white rounded-3xl border border-gray-100 shadow-2xl relative overflow-hidden"
       >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-        <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Target className="h-10 w-10 text-blue-600 animate-pulse" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+        <div className="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Target className="h-10 w-10 text-indigo-600 animate-pulse" />
         </div>
         <h3 className="text-2xl font-black text-gray-900 mb-2">Tu portafolio comienza aquí</h3>
         <p className="text-gray-700 max-w-md mx-auto mb-8 font-bold">
@@ -176,7 +176,7 @@ export default function MyPropertiesTable({
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
                 onClick={() => router.push('/calculator')}
-                className="inline-flex items-center justify-center px-8 py-4 bg-blue-700 !text-white font-black rounded-2xl hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+                className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 !text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
             >
                 <TrendingUp className="mr-2 h-5 w-5" />
                 Analizar Inversión
@@ -324,13 +324,13 @@ export default function MyPropertiesTable({
                                   className="object-cover rounded-full"
                               />
                           ) : (
-                              <div className="h-full w-full rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                              <div className="h-full w-full rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
                                   <Building2 className="h-5 w-5" />
                               </div>
                           )}
                       </div>
                       <div className="ml-4 overflow-hidden">
-                        <div className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors truncate">{property.title || 'Propiedad sin título'}</div>
+                        <div className="text-sm font-black text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{property.title || 'Propiedad sin título'}</div>
                         <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{property.type}</div>
                         
                         {/* Status Tags */}
@@ -473,103 +473,6 @@ export default function MyPropertiesTable({
                             <MoreVertical size={16} />
                         </button>
                         
-                        {mounted && openMenuId === property.id && menuPosition && createPortal(
-                            <>
-                                <div 
-                                    className="fixed inset-0 z-[100]" 
-                                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }}
-                                />
-                                <motion.div 
-                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    className="fixed w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[110] py-2 overflow-hidden text-left"
-                                    style={{ 
-                                        top: `${menuPosition.top}px`, 
-                                        left: `${menuPosition.left}px` 
-                                    }}
-                                >
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            router.push(`/my-properties/${property.id}`);
-                                            setOpenMenuId(null);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <ExternalLink size={16} className="text-slate-400" />
-                                        Ver Detalles
-                                    </button>
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            router.push(`/my-properties/${property.id}/edit`);
-                                            setOpenMenuId(null);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <Edit2 size={16} className="text-slate-400" />
-                                        Editar Propiedad
-                                    </button>
-                                    
-                                    {property.purpose === 'sale' && (
-                                        <button 
-                                            onClick={async (e) => {
-                                                e.stopPropagation();
-                                                if (property.is_listed) {
-                                                    setConfirmModal({
-                                                        isOpen: true,
-                                                        title: '¿Pausar publicación?',
-                                                        message: 'La propiedad dejará de ser visible para los compradores, pero podrás reactivarla en cualquier momento.',
-                                                        confirmText: 'Si, pausar',
-                                                        cancelText: 'Cancelar',
-                                                        type: 'info',
-                                                        onConfirm: async () => {
-                                                            await pauseProperty(property.id);
-                                                            setProperties(prev => prev.map(p => p.id === property.id ? { ...p, is_listed: false } : p));
-                                                            toast.success('Publicación pausada exitosamente');
-                                                        }
-                                                    });
-                                                    setOpenMenuId(null);
-                                                } else {
-                                                    // Activate
-                                                    setOpenMenuId(null); // Close menu first
-                                                    handlePublish(property.id);
-                                                }
-                                            }}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                                        >
-                                            {property.is_listed ? <PauseCircle size={16} className="text-slate-400" /> : <PlayCircle size={16} className="text-slate-400" />}
-                                            {property.is_listed ? 'Pausar Publicación' : 'Activar Publicación'}
-                                        </button>
-                                    )}
-                                    <div className="h-px bg-slate-100 my-1 mx-2"></div>
-                                    <button 
-                                        onClick={async (e) => {
-                                            e.stopPropagation();
-                                            setConfirmModal({
-                                                isOpen: true,
-                                                title: '¿Eliminar propiedad?',
-                                                message: 'Esta acción no se puede deshacer. Se eliminará toda la información asociada a esta propiedad.',
-                                                confirmText: 'Si, eliminar',
-                                                cancelText: 'Cancelar',
-                                                type: 'danger',
-                                                onConfirm: async () => {
-                                                     await deleteProperty(property.id);
-                                                     setProperties(prev => prev.filter(p => p.id !== property.id));
-                                                     toast.success('Propiedad eliminada');
-                                                }
-                                            });
-                                            setOpenMenuId(null);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
-                                    >
-                                        <Trash2 size={16} className="text-red-400" />
-                                        Eliminar
-                                    </button>
-                                </motion.div>
-                            </>,
-                            document.body
-                        )}
                     </div>
                   </td>
                 </motion.tr>
@@ -578,8 +481,6 @@ export default function MyPropertiesTable({
           </tbody>
         </table>
       </div>
-
-      {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow-sm">
           <div className="flex flex-1 justify-between sm:hidden">
@@ -632,6 +533,110 @@ export default function MyPropertiesTable({
           </div>
         </div>
       )}
+
+      {/* Action Menu Portal - Moved outside the loop */}
+      {mounted && openMenuId && menuPosition && (() => {
+          const activeProperty = properties.find(p => p.id === openMenuId);
+          if (!activeProperty) return null;
+
+          return createPortal(
+              <>
+                  <div 
+                      className="fixed inset-0 z-[100]" 
+                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }}
+                  />
+                  <motion.div 
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      className="fixed w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[110] py-2 overflow-hidden text-left"
+                      style={{ 
+                          top: `${menuPosition.top}px`, 
+                          left: `${menuPosition.left}px` 
+                      }}
+                  >
+                      <button 
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/my-properties/${activeProperty.id}`);
+                              setOpenMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                          <ExternalLink size={16} className="text-slate-400" />
+                          Ver Detalles
+                      </button>
+                      <button 
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/my-properties/${activeProperty.id}/edit`);
+                              setOpenMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                          <Edit2 size={16} className="text-slate-400" />
+                          Editar
+                      </button>
+                      
+                      {activeProperty.purpose === 'sale' && (
+                          <button 
+                              onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (activeProperty.is_listed) {
+                                      setConfirmModal({
+                                          isOpen: true,
+                                          title: '¿Pausar publicación?',
+                                          message: 'La propiedad dejará de ser visible para los compradores, pero podrás reactivarla en cualquier momento.',
+                                          confirmText: 'Si, pausar',
+                                          cancelText: 'Cancelar',
+                                          type: 'info',
+                                          onConfirm: async () => {
+                                              await pauseProperty(activeProperty.id);
+                                              setProperties(prev => prev.map(p => p.id === activeProperty.id ? { ...p, is_listed: false } : p));
+                                              toast.success('Publicación pausada exitosamente');
+                                          }
+                                      });
+                                      setOpenMenuId(null);
+                                  } else {
+                                      // Activate
+                                      setOpenMenuId(null); // Close menu first
+                                      handlePublish(activeProperty.id);
+                                  }
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                              {activeProperty.is_listed ? <PauseCircle size={16} className="text-slate-400" /> : <PlayCircle size={16} className="text-slate-400" />}
+                              {activeProperty.is_listed ? 'Pausar' : 'Publicar'}
+                          </button>
+                      )}
+                      <div className="h-px bg-slate-100 my-1 mx-2"></div>
+                      <button 
+                          onClick={async (e) => {
+                              e.stopPropagation();
+                              setConfirmModal({
+                                  isOpen: true,
+                                  title: '¿Eliminar propiedad?',
+                                  message: 'Esta acción no se puede deshacer. Se eliminará toda la información asociada a esta propiedad.',
+                                  confirmText: 'Si, eliminar',
+                                  cancelText: 'Cancelar',
+                                  type: 'danger',
+                                  onConfirm: async () => {
+                                        await deleteProperty(activeProperty.id);
+                                        setProperties(prev => prev.filter(p => p.id !== activeProperty.id));
+                                        toast.success('Propiedad eliminada');
+                                  }
+                              });
+                              setOpenMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                          <Trash2 size={16} className="text-red-400" />
+                          Eliminar
+                      </button>
+                  </motion.div>
+              </>,
+              document.body
+          );
+      })()}
 
       {/* Confirmation Modal */}
       {mounted && confirmModal.isOpen && createPortal(

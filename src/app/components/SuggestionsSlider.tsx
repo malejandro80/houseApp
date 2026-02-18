@@ -10,7 +10,7 @@ const suggestions = [
     icon: BadgeDollarSign,
     title: "La Regla del 1%",
     description: "Una propiedad es potencialmente rentable si la renta mensual bruta es cercana al 1% del precio de compra. ¡Úsalo como filtro rápido!",
-    color: "bg-blue-50 text-blue-600"
+    color: "bg-indigo-50 text-indigo-600"
   },
   {
     id: 2,
@@ -53,7 +53,7 @@ export default function SuggestionsSlider() {
             </div>
             
             <h3 className="text-xl font-bold text-gray-800 mb-8 flex items-center gap-2">
-                <span className="w-8 h-1 bg-blue-500 rounded-full"></span>
+                <span className="w-8 h-1 bg-indigo-500 rounded-full"></span>
                 Consejos de Inversión
             </h3>
 
@@ -92,7 +92,7 @@ export default function SuggestionsSlider() {
                         key={idx}
                         onClick={() => setCurrentIndex(idx)}
                         className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                            idx === currentIndex ? 'w-8 bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'
+                            idx === currentIndex ? 'w-8 bg-indigo-600' : 'bg-gray-300 hover:bg-gray-400'
                         }`}
                         aria-label={`Go to slide ${idx + 1}`}
                     />

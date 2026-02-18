@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import UserMenu from "./UserMenu";
-import MobileMenu from "./MobileMenu";
+
 import AdvisorNotifications from "./AdvisorNotifications";
 
 export default async function Navbar() {
@@ -14,7 +14,7 @@ export default async function Navbar() {
         <div className="h-16 flex justify-between items-center">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-3 group translate-y-[-1px]">
-              <div className="bg-slate-900 text-white rounded-xl h-10 w-10 flex items-center justify-center font-black text-sm shadow-lg shadow-slate-900/20 group-hover:scale-110 transition-transform duration-300">
+              <div className="bg-indigo-600 text-white rounded-xl h-10 w-10 flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-600/25 group-hover:scale-110 transition-transform duration-300">
                 HA
               </div>
               <div className="flex flex-col">
@@ -27,9 +27,7 @@ export default async function Navbar() {
           <div className="flex items-center gap-4">
             <AdvisorNotifications />
             <UserMenu user={user} />
-            <div className="md:hidden flex items-center">
-                <MobileMenu user={user} />
-            </div>
+
           </div>
         </div>
       </div>

@@ -66,13 +66,13 @@ function SortableImage({ id, url, onRemove, isFirst }: { id: string; url: string
         {...attributes} 
         {...listeners} 
         className={`aspect-square relative rounded-xl overflow-hidden border-2 transition-all group ${
-            isDragging ? 'border-blue-500 shadow-2xl scale-105 opacity-50' : 'border-gray-100'
-        } ${isFirst ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+            isDragging ? 'border-indigo-500 shadow-2xl scale-105 opacity-50' : 'border-gray-100'
+        } ${isFirst ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
     >
       <Image src={url} alt="preview" fill className="object-cover" />
       
       {isFirst && (
-        <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white text-[10px] font-bold py-1.5 px-3 flex items-center gap-1.5 shadow-sm">
+        <div className="absolute top-0 left-0 right-0 bg-indigo-600 text-white text-[10px] font-bold py-1.5 px-3 flex items-center gap-1.5 shadow-sm">
           <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
           FOTO DE PORTADA
         </div>
@@ -562,12 +562,12 @@ export default function PropertyForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600">Título del Anuncio</label>
-                  <input {...register('title')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Casa en El Poblado" />
+                  <input {...register('title')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej. Casa en El Poblado" />
                   {errors.title && <p className="text-red-500 text-xs">{errors.title.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600">Tipo de Inmueble</label>
-                  <select {...register('type')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                  <select {...register('type')} className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
                     <option value="house">Casa</option>
                     <option value="apartment">Apartamento</option>
                     <option value="commercial">Local Comercial</option>
@@ -584,7 +584,7 @@ export default function PropertyForm({
                     name="salePrice"
                     control={control}
                     render={({ field }) => (
-                      <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
+                      <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500" />
                     )}
                   />
                   {errors.salePrice && <p className="text-red-500 text-xs">{errors.salePrice.message}</p>}
@@ -596,7 +596,7 @@ export default function PropertyForm({
                       name="rentPrice"
                       control={control}
                       render={({ field }) => (
-                        <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
+                        <NumberInput {...field} placeholder="0" className="w-full text-gray-900 placeholder-gray-500 border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500" />
                       )}
                     />
                   </div>
@@ -688,7 +688,7 @@ export default function PropertyForm({
                         else if (val === 2) { label = "🟠 Regular / Remodelar"; color = "text-orange-600"; }
                         else if (val === 3) { label = "🟡 Buen estado"; color = "text-yellow-600"; }
                         else if (val === 4) { label = "🟢 Muy bueno"; color = "text-emerald-600"; }
-                        else if (val === 5) { label = "✨ Propiedad nueva"; color = "text-blue-600"; }
+                        else if (val === 5) { label = "✨ Propiedad nueva"; color = "text-indigo-600"; }
 
                         return (
                           <div className="flex flex-col items-end">
@@ -796,11 +796,11 @@ export default function PropertyForm({
                     </SortableContext>
 
                     {images.length < 5 && (
-                      <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-400 transition-all group">
-                        <div className="p-3 bg-gray-50 rounded-full group-hover:bg-blue-50 transition-colors">
-                          <Upload className="text-gray-400 group-hover:text-blue-500 transition-colors" size={24} />
+                      <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 hover:border-indigo-400 transition-all group">
+                        <div className="p-3 bg-gray-50 rounded-full group-hover:bg-indigo-50 transition-colors">
+                          <Upload className="text-gray-400 group-hover:text-indigo-500 transition-colors" size={24} />
                         </div>
-                        <span className="text-[10px] font-bold text-gray-400 group-hover:text-blue-500 mt-2">SUBIR FOTO</span>
+                        <span className="text-[10px] font-bold text-gray-400 group-hover:text-indigo-500 mt-2">SUBIR FOTO</span>
                         <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
                       </label>
                     )}
@@ -845,7 +845,7 @@ export default function PropertyForm({
                     <span className="text-sm font-medium text-gray-700">Afectación Vial (Planes de ampliación)</span>
                   </label>
                   <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <input type="checkbox" {...register('heritage')} className="w-5 h-5 text-blue-600 rounded" />
+                    <input type="checkbox" {...register('heritage')} className="w-5 h-5 text-indigo-600 rounded" />
                     <span className="text-sm font-medium text-gray-700">Patrimonio Arquitectónico (Limitaciones)</span>
                   </label>
                 </div>
@@ -863,24 +863,24 @@ export default function PropertyForm({
 
                 {purpose === 'sale' && (
                   <div className="pt-6 border-t border-gray-100">
-                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 mb-4">
-                      <h4 className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-4">
+                      <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-widest mb-2 flex items-center gap-2">
                         <CheckCircle size={14} /> Términos de Publicación
                       </h4>
-                      <p className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                      <p className="text-[10px] text-indigo-700 leading-relaxed font-medium">
                         Al publicar esta propiedad, certificas que la información es verídica y que tienes autorización legal para promocionarla. HouseApp se reserva el derecho de verificar la documentación y remover anuncios que no cumplan con nuestras políticas de transparencia.
                       </p>
                     </div>
-                    <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer border-2 border-transparent hover:border-blue-200 transition-all group">
+                    <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer border-2 border-transparent hover:border-indigo-200 transition-all group">
                       <div className="mt-0.5">
                         <input
                           type="checkbox"
                           {...register('acceptedListingTerms')}
-                          className="w-5 h-5 text-blue-600 rounded-md border-gray-300 focus:ring-blue-500"
+                          className="w-5 h-5 text-indigo-600 rounded-md border-gray-300 focus:ring-indigo-500"
                         />
                       </div>
                       <div>
-                        <span className="text-sm font-bold text-gray-800 group-hover:text-blue-700 transition-colors">Acepto los términos y condiciones de publicación</span>
+                        <span className="text-sm font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">Acepto los términos y condiciones de publicación</span>
                         <p className="text-[10px] text-gray-500 mt-1">Habilita la visibilidad en el mapa público y permite que otros usuarios te contacten.</p>
                       </div>
                     </label>
@@ -957,7 +957,7 @@ export default function PropertyForm({
           ) : <div />}
           
           {step < (purpose === 'investment' ? 4 : 3) ? (
-            <button type="button" onClick={nextStep} disabled={isValidating} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-lg disabled:opacity-50">
+            <button type="button" onClick={nextStep} disabled={isValidating} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 flex items-center gap-2 shadow-lg disabled:opacity-50">
               {isValidating ? <Loader2 className="animate-spin" size={16}/> : <>Siguiente <ArrowRight size={16} /></>}
             </button>
           ) : (

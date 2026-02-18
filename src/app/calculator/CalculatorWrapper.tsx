@@ -103,11 +103,11 @@ export default function CalculatorWrapper({ user }: { user: User }) {
              <div className="hidden lg:block lg:col-span-4 sticky top-24 space-y-8">
                  <SuggestionsSlider />
                  
-                 <div className="p-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl text-white shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                 <div className="p-6 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl text-white shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
                     <div className="relative z-10">
                         <h4 className="font-bold text-lg mb-2">¿Necesitas Valuación Certificada?</h4>
-                        <p className="text-blue-100 text-sm mb-4 leading-relaxed">Nuestros peritos pueden validar tu análisis antes de que ofertes.</p>
-                        <button className="w-full py-2.5 bg-white text-blue-700 font-bold rounded-xl text-sm hover:bg-blue-50 transition-colors shadow-sm">
+                        <p className="text-indigo-100 text-sm mb-4 leading-relaxed">Nuestros peritos pueden validar tu análisis antes de que ofertes.</p>
+                        <button className="w-full py-2.5 bg-white text-indigo-700 font-bold rounded-xl text-sm hover:bg-indigo-50 transition-colors shadow-sm">
                             Contactar Asesor
                         </button>
                     </div>

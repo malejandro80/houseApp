@@ -35,11 +35,11 @@ export default async function MyPropertiesPage() {
         
         {/* Header Section */}
         <div className="relative mb-12">
-            <div className="absolute -top-4 -left-4 w-24 h-24 bg-blue-400/10 blur-3xl rounded-full" />
+            <div className="absolute -top-4 -left-4 w-24 h-24 bg-indigo-400/10 blur-3xl rounded-full" />
             <div className="md:flex md:items-end md:justify-between relative z-10">
                 <div className="min-w-0 flex-1">
                     <h1 className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
-                        Consola de <span className="text-blue-600">Inversión</span>
+                        Consola de <span className="text-indigo-600">Inversión</span>
                     </h1>
                     <p className="mt-2 text-sm text-gray-500 font-medium">
                         Bienvenido de nuevo, {displayName}. Gestiona tu portafolio y acelera tus ventas.
@@ -50,13 +50,13 @@ export default async function MyPropertiesPage() {
                         href="/map"
                         className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 hover:ring-gray-300 transition-all active:scale-95"
                     >
-                        <MapIcon className="-ml-0.5 mr-2 h-4 w-4 text-blue-500" />
+                        <MapIcon className="-ml-0.5 mr-2 h-4 w-4 text-indigo-500" />
                         Mapa de Oportunidades
                     </Link>
                     
                     <Link
                         href="/calculator"
-                        className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-700 hover:shadow-blue-500/40 transition-all active:scale-95"
+                        className="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-700 hover:shadow-indigo-500/40 transition-all active:scale-95"
                     >
                         <Plus className="-ml-0.5 mr-2 h-4 w-4" />
                         Añadir Propiedad
@@ -70,7 +70,7 @@ export default async function MyPropertiesPage() {
 
         {/* List Section */}
         <div className="relative">
-            <div className="absolute -right-10 top-1/2 w-64 h-64 bg-indigo-400/5 blur-3xl rounded-full" />
+            <div className="absolute -right-10 top-1/2 w-64 h-64 bg-indigo-400/5 blur-3xl rounded-full pointer-events-none" />
             <MyPropertiesTable userId={user.id} />
         </div>
         

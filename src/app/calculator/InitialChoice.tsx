@@ -23,13 +23,13 @@ export default function InitialChoice({ onSelect }: InitialChoiceProps) {
           whileHover={{ scale: 1.02, y: -5 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => onSelect('buy')}
-          className="group relative bg-white border border-gray-200 rounded-3xl p-8 hover:border-blue-500 hover:shadow-xl transition-all duration-300 text-left overflow-hidden"
+          className="group relative bg-white border border-gray-200 rounded-3xl p-8 hover:border-indigo-500 hover:shadow-xl transition-all duration-300 text-left overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-             <Search size={120} className="text-blue-600" />
+             <Search size={120} className="text-indigo-600" />
           </div>
 
-          <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-6 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mb-6 shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
             <Search size={28} />
           </div>
           
@@ -38,7 +38,7 @@ export default function InitialChoice({ onSelect }: InitialChoiceProps) {
             Analiza la rentabilidad, riesgos y potencial de una propiedad antes de tomar una decisión de inversión.
           </p>
           
-          <span className="inline-flex items-center text-blue-600 font-bold text-sm">
+          <span className="inline-flex items-center text-indigo-600 font-bold text-sm">
             Comenzar Análisis <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </span>
         </motion.button>
