@@ -9,9 +9,9 @@ import {
     ShieldCheck,
     LucideIcon
 } from 'lucide-react';
-import MyPropertiesTable from '@/app/components/MyPropertiesTable';
-import KanbanBoard from '@/app/components/KanbanBoard';
-import AdvisorInbox from '@/app/components/AdvisorInbox';
+import MyPropertiesTable from '@/components/property/MyPropertiesTable';
+import KanbanBoard from '@/components/advisor/KanbanBoard';
+import AdvisorInbox from '@/components/advisor/AdvisorInbox';
 
 interface Tab {
     id: string;

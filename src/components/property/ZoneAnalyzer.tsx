@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import PropertyMapWrapper from '@/app/components/PropertyMapWrapper';
+import PropertyMapWrapper from '@/components/property/PropertyMapWrapper';
 import { getZoneStats, ZoneStats } from '@/app/actions/get-zone-stats';
 import { X, Radar, TrendingUp, DollarSign, MapPin, Loader2, Layers } from 'lucide-react';
-import Tooltip from './Tooltip';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface ZoneAnalyzerProps {
   id: number;
