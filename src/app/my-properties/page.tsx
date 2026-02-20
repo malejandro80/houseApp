@@ -14,12 +14,7 @@ const DashboardStats = dynamic(() => import('@/components/dashboard/DashboardSta
   )
 });
 
-const DynamicMyPropertiesTable = dynamic(() => import('@/components/property/MyPropertiesTable'), {
-  loading: () => (
-    <div className="w-full h-96 bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-pulse" />
-  ),
-  ssr: false
-});
+import DynamicMyPropertiesTable from '@/components/property/DynamicMyPropertiesTable';
 
 export default async function MyPropertiesPage() {
   const supabase = await createClient();
