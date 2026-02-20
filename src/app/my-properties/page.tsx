@@ -30,7 +30,7 @@ export default async function MyPropertiesPage() {
   const displayName = profile?.full_name || user.email?.split('@')[0];
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">
+    <main className="min-h-screen bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] overflow-x-hidden">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         
         {/* Header Section */}

@@ -376,14 +376,7 @@ const PropertiesMap = ({ properties, user, onBoundsChange, children, isAnalyzerO
                                             {contactingId === property.id ? <Loader2 className="animate-spin w-4 h-4" /> : <Mail className="w-4 h-4" />}
                                             Consultar Disponibilidad
                                         </button>
-                                        <button
-                                            onClick={() => window.open('https://www.bbva.com.mx/personas/productos/creditos/credito-hipotecario/simulador-credito-hipotecario.html', '_blank')}
-                                            className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl text-xs font-black hover:bg-gray-50 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
-                                            aria-label="Simular Crédito Hipotecario"
-                                        >
-                                            <Target size={14} className="text-emerald-500" />
-                                            Simular Crédito
-                                        </button>
+
                                     </div>
                                 </div>
                             )

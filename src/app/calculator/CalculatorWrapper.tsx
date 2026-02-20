@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Spinner } from '@/components/ui/Spinner';
 import PropertyForm from "@/components/property/PropertyForm";
 import SuggestionsSlider from "@/components/property/SuggestionsSlider";
 import CalculatorStepper from "@/components/calculator/CalculatorStepper";
@@ -32,7 +33,7 @@ export default function CalculatorWrapper({ user }: { user: User }) {
       return (
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 min-h-[600px] flex items-center justify-center">
               {roleLoading ? (
-                  <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
+                  <Spinner size={32} className="text-indigo-600" />
               ) : (
                   <InitialChoice onSelect={handleModeSelect} />
               )}

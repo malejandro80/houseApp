@@ -15,6 +15,7 @@ import { propertyFormSchema, PropertyFormData } from '@/lib/schemas/propertySche
 import Image from 'next/image';
 import NumberInput from '@/components/forms/NumberInput';
 import PhoneInput from '@/components/forms/PhoneInput';
+import { Spinner } from '@/components/ui/Spinner';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -965,7 +966,7 @@ const PropertyForm = ({
           
           {step < (purpose === 'investment' ? 4 : 3) ? (
             <button type="button" onClick={nextStep} disabled={isValidating} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 flex items-center gap-2 shadow-lg disabled:opacity-50">
-              {isValidating ? <Loader2 className="animate-spin" size={16}/> : <>Siguiente <ArrowRight size={16} /></>}
+              {isValidating ? <Spinner className="text-white" size={16}/> : <>Siguiente <ArrowRight size={16} /></>}
             </button>
           ) : (
             <button 
@@ -975,7 +976,7 @@ const PropertyForm = ({
             >
               <span className="flex items-center gap-2">
                 {isUploading ? (
-                  <Loader2 className="animate-spin" size={18} />
+                  <Spinner className="text-white" size={18} />
                 ) : (
                   <Save size={18} className="group-hover:scale-110 transition-transform" />
                 )}
