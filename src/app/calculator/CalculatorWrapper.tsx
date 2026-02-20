@@ -1,12 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Spinner } from '@/components/ui/Spinner';
-import PropertyForm from "@/components/property/PropertyForm";
-import SuggestionsSlider from "@/components/property/SuggestionsSlider";
 import CalculatorStepper from "@/components/calculator/CalculatorStepper";
 import InitialChoice from "./InitialChoice";
 import { User } from '@supabase/supabase-js';
+
+const PropertyForm = dynamic(() => import('@/components/property/PropertyForm'), {
+  loading: () => <div className="w-full h-96 bg-gray-50 rounded-2xl animate-pulse flex items-center justify-center text-gray-400">Cargando formulario...</div>
+});
+
+const SuggestionsSlider = dynamic(() => import('@/components/property/SuggestionsSlider'), {
+  loading: () => <div className="w-full h-64 bg-gray-50 rounded-2xl animate-pulse" />
+});
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';

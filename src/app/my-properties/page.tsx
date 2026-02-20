@@ -2,8 +2,24 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Map as MapIcon, Plus } from 'lucide-react';
-import MyPropertiesTable from '@/components/property/MyPropertiesTable';
-import DashboardStats from '@/components/dashboard/DashboardStats';
+import dynamic from 'next/dynamic';
+
+const DashboardStats = dynamic(() => import('@/components/dashboard/DashboardStats'), {
+  loading: () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="h-32 bg-white/50 animate-pulse rounded-2xl border border-gray-100 shadow-sm" />
+      ))}
+    </div>
+  )
+});
+
+const DynamicMyPropertiesTable = dynamic(() => import('@/components/property/MyPropertiesTable'), {
+  loading: () => (
+    <div className="w-full h-96 bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-pulse" />
+  ),
+  ssr: false
+});
 
 export default async function MyPropertiesPage() {
   const supabase = await createClient();
@@ -71,7 +87,7 @@ export default async function MyPropertiesPage() {
         {/* List Section */}
         <div className="relative">
             <div className="absolute -right-10 top-1/2 w-64 h-64 bg-indigo-400/5 blur-3xl rounded-full pointer-events-none" />
-            <MyPropertiesTable userId={user.id} />
+            <DynamicMyPropertiesTable userId={user.id} />
         </div>
         
         <footer className="mt-16 text-center text-gray-500 text-sm">

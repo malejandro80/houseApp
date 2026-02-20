@@ -328,4 +328,39 @@ export async function getAdvisorLeads(): Promise<LeadMessage[]> {
     }));
 }
 
+export async function getUserInquiries(): Promise<LeadMessage[]> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    try {
+        const { data: leads, error } = await supabase
+            .from('leads')
+            .select('*, property:properties(title, address), advisor:profiles!advisor_id(full_name)')
+            .eq('created_by', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Supabase getUserInquiries error:', error);
+            throw error;
+        }
+
+        return leads.map(lead => ({
+            id: lead.id,
+            senderName: (lead as any).advisor?.full_name || 'Asesor Asignado',
+            senderEmail: '',
+            senderPhone: '',
+            propertyTitle: (lead as any).property?.title || (lead as any).property?.address || lead.title || 'Propiedad de interés',
+            message: lead.message || lead.title,
+            status: lead.stage_id ? 'sent' : 'archived',
+            timestamp: new Date(lead.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
+            hasNew: false,
+            propertyId: lead.property_id
+        }));
+    } catch (err) {
+        console.error('Server Action getUserInquiries failed:', err);
+        throw err;
+    }
+}
+
 

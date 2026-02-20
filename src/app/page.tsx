@@ -1,6 +1,13 @@
 import Link from 'next/link';
-import MiniCalculator from '@/components/calculator/MiniCalculator';
-import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
+import dynamic from 'next/dynamic';
+
+const MiniCalculator = dynamic(() => import('@/components/calculator/MiniCalculator'), {
+  loading: () => <div className="w-full max-w-md mx-auto aspect-[4/5] bg-white/10 backdrop-blur-sm rounded-2xl animate-pulse" />
+});
+
+const GoogleLoginButton = dynamic(() => import('@/components/ui/GoogleLoginButton'), {
+  loading: () => <div className="h-14 w-full bg-white/20 rounded-[2rem] animate-pulse" />
+});
 import { 
   ArrowRight, 
   BarChart3, 
