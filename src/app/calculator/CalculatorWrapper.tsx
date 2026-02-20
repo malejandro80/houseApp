@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import PropertyForm from "@/components/property/PropertyForm";
-import SuggestionsSlider from "@/components/calculator/SuggestionsSlider";
+import SuggestionsSlider from "@/components/property/SuggestionsSlider";
 import CalculatorStepper from "@/components/calculator/CalculatorStepper";
 import InitialChoice from "./InitialChoice";
 import { User } from '@supabase/supabase-js';

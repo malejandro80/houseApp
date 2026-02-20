@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import PropertyDetailClient from '@/app/components/PropertyDetailClient';
+import PropertyDetailClient from '@/components/property/PropertyDetailClient';
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();

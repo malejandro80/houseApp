@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import AdvisorInbox from '@/app/components/AdvisorInbox';
+import AdvisorInbox from '@/components/advisor/AdvisorInbox';
 import { MessageSquare } from 'lucide-react';
 
 export default async function UserMessagesPage() {

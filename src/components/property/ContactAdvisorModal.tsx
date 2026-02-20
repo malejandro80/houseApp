@@ -6,7 +6,7 @@ import { X, Send, MessageSquare, User as UserIcon, Phone, Mail, Building2, Check
 import { toast } from 'sonner';
 import { submitInquiry } from '@/app/actions/leads';
 import { createClient } from '@/lib/supabase/client';
-import PhoneInput from './PhoneInput';
+import PhoneInput from '@/components/forms/PhoneInput';
 
 interface ContactAdvisorModalProps {
     isOpen: boolean;
