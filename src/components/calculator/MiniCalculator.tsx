@@ -1,51 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calculator, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
-import NumberInput from './NumberInput';
+import NumberInput from '@/components/forms/NumberInput';
+import { useMiniCalculator } from '@/hooks/useMiniCalculator';
 
-export default function MiniCalculator() {
-  const [price, setPrice] = useState<number | ''>('');
-  const [rent, setRent] = useState<number | ''>('');
-  const [yieldResult, setYieldResult] = useState<number>(0);
-  const [status, setStatus] = useState<'bad' | 'ok' | 'good'>('ok');
-
-  useEffect(() => {
-    if (price && rent && Number(price) > 0) {
-      const annualRent = Number(rent) * 12;
-      const calculatedYield = (annualRent / Number(price)) * 100;
-      setYieldResult(calculatedYield);
-
-      if (calculatedYield < 5) setStatus('bad');
-      else if (calculatedYield < 10) setStatus('ok');
-      else setStatus('good');
-    } else {
-      setYieldResult(0);
-      setStatus('ok');
-    }
-  }, [price, rent]);
-
-  const getFeedback = () => {
-    if (!yieldResult) return "Ingresa los valores para calcular.";
-    const years = (100 / yieldResult).toFixed(1);
-    
-    if (status === 'bad') return `Rentabilidad Baja (<5%). Retorno menor al promedio. Recuperarías tu inversión en ${years} años.`;
-    if (status === 'ok') return `Rentabilidad Moderada (5-10%). Es una inversión estándar. Recuperarías tu inversión en ${years} años.`;
-    return `¡Excelente Oportunidad! (>10%). El retorno es muy atractivo. Recuperarías tu inversión en tan solo ${years} años.`;
-  };
-
-  const getColor = () => {
-    if (status === 'bad') return 'text-red-500';
-    if (status === 'ok') return 'text-yellow-500';
-    return 'text-green-500';
-  };
-
-  const getBgColor = () => {
-    if (status === 'bad') return 'bg-red-500';
-    if (status === 'ok') return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
+const MiniCalculator = () => {
+  const { price, setPrice, rent, setRent, yieldResult, status, getFeedback, getColor, getBgColor } = useMiniCalculator();
 
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 border border-white/20 w-full max-w-md mx-auto">
@@ -86,24 +47,22 @@ export default function MiniCalculator() {
           </div>
         </div>
 
-        {/* Thermometer / Meter */}
         <div className="pt-6">
           <div className="flex justify-between items-end mb-2">
             <span className="text-sm font-medium text-gray-600">Yield Bruto (Anual)</span>
-            <span className={`text-3xl font-black ${getColor()} transition-colors duration-500`}>
+            <span className={`text-3xl font-black ${getColor(status)} transition-colors duration-500`}>
               {yieldResult.toFixed(1)}%
             </span>
           </div>
           
           <div className="h-4 bg-gray-200 rounded-full overflow-hidden relative">
-            {/* Markers */}
             <div className="absolute top-0 bottom-0 left-[33%] w-0.5 bg-white/50 z-10"></div>
             <div className="absolute top-0 bottom-0 left-[66%] w-0.5 bg-white/50 z-10"></div>
             
             <motion.div
-              className={`h-full ${getBgColor()}`}
+              className={`h-full ${getBgColor(status)}`}
               initial={{ width: 0 }}
-              animate={{ width: `${Math.min(yieldResult * 8, 100)}%` }} // Scale roughly: 12.5% yield fills bar
+              animate={{ width: `${Math.min(yieldResult * 8, 100)}%` }}
               transition={{ type: "spring", stiffness: 60 }}
             />
           </div>
@@ -114,7 +73,6 @@ export default function MiniCalculator() {
           </div>
         </div>
 
-        {/* Recommendation Box */}
         <AnimatePresence mode='wait'>
           {yieldResult > 0 && (
             <motion.div
@@ -147,3 +105,5 @@ export default function MiniCalculator() {
     </div>
   );
 }
+
+export default MiniCalculator;

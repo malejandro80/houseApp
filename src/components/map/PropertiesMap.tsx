@@ -12,7 +12,7 @@ import { User } from '@supabase/supabase-js';
 import { getAdvisorContact } from '@/app/actions/contact';
 import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
-import ContactAdvisorModal from './ContactAdvisorModal';
+import ContactAdvisorModal from '@/components/property/ContactAdvisorModal';
 
 type Property = {
   id: string; 
@@ -78,7 +78,7 @@ function MapController({
   return null;
 }
 
-export default function PropertiesMap({ properties, user, onBoundsChange, children, isAnalyzerOpen, onAnalyzerClose }: PropertiesMapProps) {
+const PropertiesMap = ({ properties, user, onBoundsChange, children, isAnalyzerOpen, onAnalyzerClose }: PropertiesMapProps) => {
   const { isAsesor, isSuperAdmin } = useUserRole();
   // Center: Mexico City default or first property
   const defaultCenter: [number, number] = properties.length > 0
@@ -782,3 +782,5 @@ function LocateControl({ autoLocate = false }: { autoLocate?: boolean }) {
     </button>
   );
 }
+
+export default PropertiesMap;

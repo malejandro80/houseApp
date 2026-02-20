@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import KanbanBoard from '@/app/components/KanbanBoard';
+import KanbanBoard from "@/components/advisor/KanbanBoard";
 import { Trello } from 'lucide-react';
 
 export default async function PipelinePage() {

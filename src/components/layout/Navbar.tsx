@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import UserMenu from "./UserMenu";
 
-import AdvisorNotifications from "./AdvisorNotifications";
+import AdvisorNotifications from "@/components/advisor/AdvisorNotifications";
 
 export default async function Navbar() {
   const supabase = await createClient();

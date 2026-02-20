@@ -18,6 +18,8 @@ interface ContactAdvisorModalProps {
     user: any;
 }
 
+import { logClientError } from '@/lib/logger-client';
+
 export default function ContactAdvisorModal({ 
     isOpen, 
     onClose, 
@@ -30,7 +32,6 @@ export default function ContactAdvisorModal({
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
     
-    // Form State
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -38,7 +39,6 @@ export default function ContactAdvisorModal({
         message: ''
     });
 
-    // Pre-fill if user is logged in
     useEffect(() => {
         if (isOpen && user) {
             const fetchProfile = async () => {
@@ -82,8 +82,7 @@ export default function ContactAdvisorModal({
             setIsSubmitted(true);
             toast.success('Mensaje enviado al asesor con éxito');
         } catch (error) {
-            console.error('Error in submission:', error);
-            toast.error('Hubo un error al enviar tu solicitud. Inténtalo de nuevo.');
+            logClientError(error, 'ContactAdvisorModal.handleSubmit', user?.id, { propertyId, advisorId });
         } finally {
             setLoading(false);
         }

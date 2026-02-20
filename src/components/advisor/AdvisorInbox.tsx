@@ -27,18 +27,7 @@ import {
 } from '@/app/actions/leads';
 import { toast } from 'sonner';
 
-interface LeadMessage {
-    id: string;
-    senderName: string;
-    senderEmail: string;
-    senderPhone: string;
-    propertyTitle: string;
-    message: string;
-    status: 'new' | 'replied' | 'archived' | 'sent';
-    timestamp: string;
-    hasNew: boolean;
-    propertyId?: string;
-}
+import { LeadMessage } from '@/common/types/leads';
 
 interface AdvisorInboxProps {
     mode?: 'advisor' | 'user';

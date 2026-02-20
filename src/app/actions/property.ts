@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-// Schema for updating properties (Whitelist)
+
 const updatePropertySchema = z.object({
     title: z.string().min(3).optional(),
     type: z.string().optional(),
@@ -37,11 +37,9 @@ export async function publishProperty(propertyId: string) {
   if (!user) {
     return { error: 'Unauthorized' };
   }
-
-  // Validate propertyId
   if (!propertyId) return { error: 'Invalid ID' };
 
-  // 1. Check Subscription
+ 
   const { data: subscription } = await supabase
     .from('subscriptions')
     .select('status, current_period_end')
@@ -51,16 +49,15 @@ export async function publishProperty(propertyId: string) {
   const isActive = subscription?.status === 'active' && new Date(subscription.current_period_end) > new Date();
 
   if (!isActive) {
-    return { error: 'SUBSCRIPTION_REQUIRED' }; // Special code for client to redirect
+    return { error: 'SUBSCRIPTION_REQUIRED' }; 
   }
 
-  // 2. Publish Property (Trigger will handle assignment)
   const { error } = await supabase
     .from('properties')
     .update({ 
         is_listed: true,
         listing_status: 'active',
-        accepted_listing_terms: true // Re-activating implies terms are accepted
+        accepted_listing_terms: true
     })
     .eq('id', propertyId)
     .eq('user_id', user.id); // Security: only owner
@@ -133,13 +130,11 @@ export async function updateProperty(propertyId: string, data: any) {
       return { error: 'Unauthorized' };
     }
 
-    // 1. Validate Input (Whitelist allowed fields)
     const result = updatePropertySchema.safeParse(data);
     if (!result.success) {
         return { error: 'Invalid data: ' + result.error.issues.map(i => i.message).join(', ') };
     }
   
-    // 2. Clean up (remove undefined)
     const updateData = Object.fromEntries(
         Object.entries(result.data).filter(([_, v]) => v !== undefined)
     );
@@ -148,7 +143,6 @@ export async function updateProperty(propertyId: string, data: any) {
         return { error: 'No valid fields provided for update' };
     }
 
-    // 3. SECURE UPDATE: Ensure user_id matches
     const { error } = await supabase
       .from('properties')
       .update(updateData)

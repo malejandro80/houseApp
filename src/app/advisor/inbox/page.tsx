@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import AdvisorInbox from '@/app/components/AdvisorInbox';
+import AdvisorInbox from "@/components/advisor/AdvisorInbox";
 import { MessageSquare } from 'lucide-react';
 
-export default async function InboxPage() {
+const InboxPage = async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -32,3 +32,5 @@ export default async function InboxPage() {
     </main>
   );
 }
+
+export default InboxPage;

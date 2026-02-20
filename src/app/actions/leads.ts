@@ -3,24 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export interface Lead {
-    id: string;
-    advisor_id: string;
-    property_id?: string;
-    title: string;
-    client_name: string;
-    client_contact?: string;
-    client_email?: string;
-    client_phone?: string;
-    message?: string;
-    address_reference?: string;
-    estimated_value?: number;
-    priority: 'low' | 'medium' | 'high';
-    stage_id: string;
-    order_index: number;
-    created_at: string;
-    updated_at: string;
-}
+import { Lead, KanbanStageWithLeads, LeadMessage } from '@/common/types/leads';
 
 // ... existing interfaces ...
 
@@ -89,14 +72,7 @@ export async function submitInquiry(payload: {
     return { success: true };
 }
 
-export interface KanbanStageWithLeads {
-    id: string;
-    name: string;
-    slug: string;
-    color: string;
-    order_index: number;
-    tasks: Lead[];
-}
+// KanbanStageWithLeads imported from common/types
 
 export async function getKanbanData() {
     const supabase = await createClient();
@@ -275,7 +251,7 @@ export async function deleteLead(leadId: string) {
     revalidatePath('/advisor/pipeline');
 }
 
-export async function getWeeklyVisits() {
+export async function getWeeklyVisits(): Promise<Lead[]> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
@@ -297,10 +273,10 @@ export async function getWeeklyVisits() {
         .order('updated_at', { ascending: false });
 
     if (error) throw error;
-    return leads;
+    return leads as Lead[];
 }
 
-export async function getPendingLeads() {
+export async function getPendingLeads(): Promise<Lead[]> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
@@ -322,10 +298,10 @@ export async function getPendingLeads() {
         .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return leads;
+    return leads as Lead[];
 }
 
-export async function getAdvisorLeads() {
+export async function getAdvisorLeads(): Promise<LeadMessage[]> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
@@ -352,7 +328,7 @@ export async function getAdvisorLeads() {
     }));
 }
 
-export async function getUserInquiries() {
+export async function getUserInquiries(): Promise<LeadMessage[]> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];

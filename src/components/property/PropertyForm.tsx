@@ -13,8 +13,8 @@ import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { propertyFormSchema, PropertyFormData } from '@/lib/schemas/propertySchema';
 import Image from 'next/image';
-import NumberInput from './NumberInput';
-import PhoneInput from './PhoneInput';
+import NumberInput from '@/components/forms/NumberInput';
+import PhoneInput from '@/components/forms/PhoneInput';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -108,7 +108,7 @@ function SortableImage({ id, url, onRemove, isFirst }: { id: string; url: string
   );
 }
 
-export default function PropertyForm({ 
+const PropertyForm = ({ 
     user, 
     step, 
     setStep, 
@@ -122,7 +122,7 @@ export default function PropertyForm({
     purpose?: 'sale' | 'investment',
     initialData?: any,
     isEditMode?: boolean
-}) {
+}) => {
   const [isUploading, setIsUploading] = useState(false);
   const [images, setImages] = useState<ImageItem[]>(
     initialData?.images?.map((url: string, index: number) => ({ 
@@ -226,7 +226,7 @@ export default function PropertyForm({
   }, [salePrice, rentPrice]);
 
   const LocationPicker = useMemo(() => dynamic(
-    () => import('./LocationPicker'),
+    () => import('@/components/forms/LocationPicker'),
     { ssr: false, loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-lg" /> }
   ), []);
 
@@ -989,3 +989,5 @@ export default function PropertyForm({
     </div>
   );
 }
+
+export default PropertyForm;

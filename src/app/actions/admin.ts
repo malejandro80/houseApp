@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache';
 export async function verifyAdvisor(advisorId: string, action: 'approve' | 'reject') {
   const supabase = await createClient();
   
-  // 1. Verify caller is superadmin
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
 
@@ -20,7 +19,6 @@ export async function verifyAdvisor(advisorId: string, action: 'approve' | 'reje
     return { error: 'Forbidden: Only superadmins can verify advisors' };
   }
 
-  // 2. Perform Update
   const updates: any = {
     verification_status: action === 'approve' ? 'verified' : 'rejected',
     updated_at: new Date().toISOString()
@@ -28,7 +26,7 @@ export async function verifyAdvisor(advisorId: string, action: 'approve' | 'reje
 
   if (action === 'approve') {
     updates.role = 'asesor';
-    updates.is_available = true; // Make them available for assignment immediately
+    updates.is_available = true; 
   }
 
   const { error } = await supabase
@@ -48,14 +46,12 @@ export async function verifyAdvisor(advisorId: string, action: 'approve' | 'reje
 export async function getAdminStats() {
   const supabase = await createClient();
   
-  // 1. Verify admin
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
   
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   if (profile?.role !== 'superadmin') throw new Error('Forbidden');
 
-  // 2. Fetch Aggregated Stats
   const [
     { count: totalUsers },
     { count: totalAdvisors },

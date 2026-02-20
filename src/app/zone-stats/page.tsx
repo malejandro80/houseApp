@@ -1,79 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
-import { getUserZones, getZoneHistory, Zone, ZoneHistory } from '@/app/actions/zone-actions';
 import { ArrowLeft, BarChart3, ChevronDown, Loader2, MapPin, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import InfoTooltip from '@/app/components/Tooltip';
+import InfoTooltip from '@/components/ui/Tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
-
 import { useUserRole } from '@/hooks/useUserRole';
 import { useRouter } from 'next/navigation';
+import { useZoneStats } from '@/hooks/useZoneStats';
+import { ZoneHistory } from '@/app/actions/zone-actions';
 
-export default function ZoneStatsPage() {
-  const { isSuperAdmin, loading: roleLoading } = useUserRole();
-  const router = useRouter();
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
-  const [history, setHistory] = useState<ZoneHistory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [isZoneSelectorOpen, setIsZoneSelectorOpen] = useState(false);
-
-  useEffect(() => {
-    if (!roleLoading && !isSuperAdmin) {
-        router.push('/map');
-    }
-  }, [isSuperAdmin, roleLoading, router]);
-
-  useEffect(() => {
-    if (isSuperAdmin) {
-        loadZones();
-    }
-  }, [isSuperAdmin]);
-
-  useEffect(() => {
-    if (selectedZone) {
-      fetchHistory(selectedZone.id);
-    }
-  }, [selectedZone]);
+const ZoneStatsPage = () => {
+    const { isSuperAdmin, loading: roleLoading } = useUserRole();
+      const router = useRouter();
+      const [isZoneSelectorOpen, setIsZoneSelectorOpen] = useState(false);
+      const { zones, selectedZone, setSelectedZone, history, loading, loadingHistory } = useZoneStats(isSuperAdmin);
 
   if (roleLoading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
-      );
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
   }
 
-  if (!isSuperAdmin) return null;
-
-  const loadZones = async () => {
-    try {
-      const userZones = await getUserZones();
-      setZones(userZones);
-      if (userZones.length > 0) {
-        setSelectedZone(userZones[0]);
-      }
-    } catch (error) {
-      console.error('Error loading zones:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchHistory = async (zoneId: number) => {
-    setLoadingHistory(true);
-    try {
-      const data = await getZoneHistory(zoneId);
-      setHistory(data);
-    } catch (error) {
-      console.error('Error loading history:', error);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
+  if (!isSuperAdmin) {
+    if (!roleLoading) router.push('/map');
+    return null;
+  }
 
   // Format date for chart
   const formatXAxis = (dateStr: string) => {
@@ -90,7 +45,6 @@ export default function ZoneStatsPage() {
      });
   };
 
-  // Animation Variants
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -132,7 +86,6 @@ export default function ZoneStatsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -158,7 +111,6 @@ export default function ZoneStatsPage() {
                         </p>
                     )}
 
-                    {/* Zone Selector Dropdown */}
                     <AnimatePresence>
                     {isZoneSelectorOpen && (
                         <>
@@ -246,7 +198,6 @@ export default function ZoneStatsPage() {
                 initial="hidden"
                 animate="show"
             >
-                {/* Key Metrics Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <motion.div variants={itemVariants} whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-shadow">
                         <div className="flex items-center gap-1 mb-1">
@@ -296,11 +247,9 @@ export default function ZoneStatsPage() {
                     </motion.div>
                 </div>
 
-                {/* Price Trend Chart */}
                 <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-bold text-gray-900">Tendencia de Precios</h3>
-                        {/* Period Selector could go here */}
                     </div>
                     
                     <div className="h-[300px] w-full">
@@ -346,7 +295,6 @@ export default function ZoneStatsPage() {
                     </div>
                 </motion.div>
 
-                 {/* Price per m2 Trend Chart */}
                  <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                     <h3 className="font-bold text-gray-900 mb-6">Evolución Precio por m²</h3>
                     <div className="h-[250px] w-full">
@@ -390,3 +338,5 @@ export default function ZoneStatsPage() {
     </div>
   );
 }
+
+export default ZoneStatsPage;

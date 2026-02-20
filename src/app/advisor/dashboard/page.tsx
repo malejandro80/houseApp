@@ -1,38 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
 import { Target } from 'lucide-react';
-import MyPropertiesTable from '@/app/components/MyPropertiesTable';
-import AdvisorStats from '@/app/components/AdvisorStats';
-import { getWeeklyVisits, getPendingLeads } from '@/app/actions/leads';
-import DashboardQuickView from '@/app/components/DashboardQuickView';
+import MyPropertiesTable from '@/components/property/MyPropertiesTable';
+import AdvisorStats from '@/components/advisor/AdvisorStats';
+import DashboardQuickView from '@/components/dashboard/DashboardQuickView';
+import { loadAdvisorDashboard } from './loader';
 
-export default async function AdvisorDashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return redirect('/login');
-  }
-
-  // Double check if user is advisor (optional but recommended)
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'asesor' && profile?.role !== 'superadmin') {
-    return redirect('/my-properties');
-  }
-
-  // Fetch quick view data
-  const [weeklyVisits, pendingLeads] = await Promise.all([
-    getWeeklyVisits(),
-    getPendingLeads()
-  ]);
+const AdvisorDashboardPage = async () => {
+  const { user, profile, weeklyVisits, pendingLeads } = await loadAdvisorDashboard();
 
   return (
     <main className="min-h-screen bg-slate-50 relative overflow-hidden">
@@ -92,4 +66,6 @@ export default async function AdvisorDashboardPage() {
       </div>
     </main>
   );
-}
+};
+
+export default AdvisorDashboardPage;

@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Map as MapIcon, Plus } from 'lucide-react';
-import MyPropertiesTable from '@/app/components/MyPropertiesTable';
-import DashboardStats from '@/app/components/DashboardStats';
+import MyPropertiesTable from '@/components/property/MyPropertiesTable';
+import DashboardStats from '@/components/dashboard/DashboardStats';
 
 export default async function MyPropertiesPage() {
   const supabase = await createClient();

@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { ArrowLeft, Building2, MapPin, BedDouble, Bath, Car, Maximize, DollarSign, Calendar, Phone, Mail, MessageCircle, ShieldAlert, BadgeCheck, Pencil, User, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import PropertyMapWrapper from '@/app/components/PropertyMapWrapper';
+import PropertyMapWrapper from '@/components/property/PropertyMapWrapper';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
-import ContactAdvisorModal from '@/app/components/ContactAdvisorModal';
+import ContactAdvisorModal from '@/components/property/ContactAdvisorModal';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { logClientError } from '@/lib/logger-client';
 
@@ -62,7 +62,7 @@ const PHYSICAL_CONDITION_LABELS: Record<number, { label: string, color: string, 
   5: { label: 'Propiedad nueva', color: 'text-blue-600', dot: 'bg-blue-600' }
 };
 
-export default function PropertyDetailClient({ 
+const PropertyDetailClient = ({ 
   property: p, 
   user, 
   userRole = 'usuario' 
@@ -70,7 +70,7 @@ export default function PropertyDetailClient({
   property: PropertyDetail, 
   user: SupabaseUser | null,
   userRole?: string 
-}) {
+}) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -582,3 +582,5 @@ export default function PropertyDetailClient({
     </motion.div>
   );
 }
+
+export default PropertyDetailClient;

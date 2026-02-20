@@ -52,9 +52,8 @@ import {
     moveLead,
     updateLead,
     deleteLead,
-    KanbanStageWithLeads,
-    Lead
 } from '@/app/actions/leads';
+import { KanbanStageWithLeads, Lead } from '@/common/types/leads';
 import { logClientError } from '@/lib/logger-client';
 
 export default function KanbanBoard() {

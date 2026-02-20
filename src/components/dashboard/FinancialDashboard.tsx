@@ -1,8 +1,8 @@
 'use client';
 
 import { Activity, DollarSign, Umbrella, TrendingUp, TrendingDown, AlertTriangle, ShieldCheck, BadgeDollarSign } from 'lucide-react';
-import { ProfitabilityResult } from '../hooks/usePropertyProfitability';
-import Tooltip from './Tooltip';
+import { ProfitabilityResult } from '@/app/hooks/usePropertyProfitability';
+import Tooltip from '@/components/ui/Tooltip';
 
 type FinancialDashboardProps = {
   result: ProfitabilityResult;
@@ -47,7 +47,7 @@ function GaugeChart({ value, max = 10 }: { value: number; max?: number }) {
   );
 }
 
-export default function FinancialDashboard({ result }: FinancialDashboardProps) {
+const FinancialDashboard = ({ result }: FinancialDashboardProps) => {
 
   const getHealthLabel = (health: typeof result.investmentHealth) => {
     switch (health) {
@@ -150,3 +150,5 @@ export default function FinancialDashboard({ result }: FinancialDashboardProps) 
     </div>
   );
 }
+
+export default FinancialDashboard;

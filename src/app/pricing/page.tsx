@@ -10,7 +10,6 @@ export default async function PricingPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return redirect('/login');
 
-  // 2. Check Subscription
   const { data: subscription } = await supabase
     .from('subscriptions')
     .select('plan_type, status, current_period_end')

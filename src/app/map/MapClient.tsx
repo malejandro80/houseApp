@@ -42,7 +42,7 @@ export default function MapClient({ user }: { user: User | null }) {
 
   // Dynamically import map to avoid SSR issues
   const PropertiesMap = useMemo(() => dynamic(
-    () => import('../components/PropertiesMap'),
+    () => import('@/components/map/PropertiesMap'),
     { 
       loading: () => <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-500 animate-pulse">Cargando mapa...</div>,
       ssr: false

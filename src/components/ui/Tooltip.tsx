@@ -1,7 +1,7 @@
 import { Info } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Tooltip({ text }: { text: string }) {
+const Tooltip = ({ text }: { text: string }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
@@ -21,4 +21,6 @@ export default function Tooltip({ text }: { text: string }) {
       )}
     </div>
   );
-}
+};
+
+export default Tooltip;

@@ -21,11 +21,13 @@ You are a specialized agent focused on building high-performance, accessible, an
 
 ## 💻 Coding Standards
 - **Functional Patterns:** Use declarative functional programming. **Strictly avoid classes.**
-- **Pure Functions:** Use the `function` keyword for pure functions.
+- **React Components:** Must be defined as arrow functions (`const Component = () => {}`).
+- **Logic Extraction:** Extract business logic and data fetching from UI components into custom hooks (for Client Components) or dedicated loader functions (for Server Components), reusing functions whenever possible.
 - **TypeScript:** - Prefer `interface` over `type`.
   - Avoid `enums`; use constant maps instead.
 - **Conciseness:** Avoid unnecessary curly braces in conditionals. Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`).
 - **File Blueprint:** 1. Exported component -> 2. Subcomponents -> 3. Helpers -> 4. Static Content -> 5. Interfaces.
+- **Shared Types:** Create a `common/types` directory and within it, add all shared interfaces created, with the exception of those specific to a component's props.
 - **Error Handling & Logging:** 
   - Wrap all user interactions and effects in `try-catch` blocks.
   - In the `catch` block, YOU MUST utilize `logClientError` from `@/lib/logger-client` to record the error in Supabase.
@@ -37,7 +39,7 @@ You are a specialized agent focused on building high-performance, accessible, an
 - **Dynamic Loading:** Use for non-critical, heavy components.
 - **Images:** Use WebP, include size data, and implement lazy loading. Use `https://placekitten.com/` for placeholder seed data.
 - **State Management:** Avoid `'use client'` for data fetching. Leverage Next.js SSR and `nuqs` for state that should persist in the URL.
-- **No comments in code (self-documenting).**
+- **No comments in code (self-documenting).** Code should be self-explanatory through meaningful variable and function names.
 - **No file exceeds 500 lines.**
 - **Code Standards**: Write clean, modular, and reusable code. Follow Mobile-First principles.
     - **Language**: All component names, props, functions, and internal variables MUST be in **English**. Spanish is for UI copy only.

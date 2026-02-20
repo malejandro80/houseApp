@@ -17,7 +17,7 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
   - `/src/app/api`: Only for webhooks or external API integrations (Route Handlers).
 - **Naming:** - Use lowercase-dashed for file names (e.g., `update-user-profile.ts`).
   - Server Action files must include `'use server'` at the top.
-- **No comments in code (self-documenting).**
+- **No comments in code (self-documenting).** Code should be self-explanatory through meaningful variable and function names.
 - **No file exceeds 500 lines.**
 - **Code Standards**: Write clean, modular, and reusable code. Follow RESTful principles for API design.
   - **Language**: All database schemas, tables, columns, and internal variables MUST be in **English**.
@@ -25,6 +25,7 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
 - **Mobile-First:** Always design and develop with mobile as the primary target. Desktop is an enhancement. 
 
 ## 💻 Coding Standards
+- **Logic Extraction:** Extract business logic into reusable loader functions or services, avoiding direct implementation inside shared UI components.
 - **Functional Logic:** Use functional programming patterns; avoid classes for service layers.
 - **Strict Validation:** Use **Zod** to validate all input data in Server Actions before processing.
 - **Error Handling & Logging:**
@@ -32,6 +33,7 @@ You are a specialized agent focused on server-side logic, secure data fetching, 
   - In the `catch` block, YOU MUST utilize `logServerError` (imported from `@/lib/logger-server` or `@/app/actions/error-logging`) to record the error.
   - Return a structured error object `{ error: string }` so the frontend can display a user-friendly message, while the backend logs the technical details.
 - **TypeScript:** Use interfaces for data structures. Always use generated types from Supabase (`Database['public']['Tables'][...]`).
+- **Shared Types:** Create a `common/types` directory and within it, add all shared interfaces created, with the exception of those specific to a component's props.
 - **PGRST Schema Sync:** If you encounter a 'column not found' error (PGRST204) after a database change, you must inform the user to manually reload the schema cache in the Supabase Dashboard SQL Editor using: `NOTIFY pgrst, 'reload schema';`.
 
 ## 🔒 Security & Auth

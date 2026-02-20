@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Calendar, MessageSquare, User, MapPin, ArrowRight } from 'lucide-react';
-import { Lead } from '@/app/actions/leads';
+import { Lead } from '@/common/types/leads';
 import Link from 'next/link';
 
 interface DashboardQuickViewProps {

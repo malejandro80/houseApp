@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import PropertyForm from "@/app/components/PropertyForm";
-import SuggestionsSlider from "@/app/components/SuggestionsSlider";
-import CalculatorStepper from "@/app/components/CalculatorStepper";
+import PropertyForm from "@/components/property/PropertyForm";
+import SuggestionsSlider from "@/components/property/SuggestionsSlider";
+import CalculatorStepper from "@/components/calculator/CalculatorStepper";
 import InitialChoice from "./InitialChoice";
 import { User } from '@supabase/supabase-js';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
