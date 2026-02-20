@@ -74,3 +74,26 @@ export async function getAdminStats() {
     leads: totalLeads || 0
   };
 }
+
+export async function getErrorLogs() {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+  
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'superadmin') throw new Error('Forbidden');
+
+  const { data: logs, error } = await supabase
+    .from('error_logs')
+    .select('*')
+    .order('occurred_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error('Error fetching logs:', error);
+    return [];
+  }
+
+  return logs;
+}

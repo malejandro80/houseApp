@@ -34,7 +34,6 @@ export async function GET(request: Request) {
 
       // If profile is missing (PGRST116), try to insert default
       if (!profile) {
-          console.log('Profile missing for user, attempting creation...');
           try {
               const { error: insertError } = await supabase.from('profiles').insert({
                   id: user.id,

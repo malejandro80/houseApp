@@ -157,7 +157,6 @@ export default function MyPropertiesTable({
 
   if (loading && properties.length === 0) return <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2"><div className="animate-spin h-5 w-5 border-2 border-indigo-500 rounded-full border-t-transparent"></div> Cargando tus propiedades...</div>;
 
-  console.log(mounted, openMenuId === properties[0].id, menuPosition );
   if (!loading && properties.length === 0) {
     return (
       <motion.div 

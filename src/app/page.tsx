@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import MiniCalculator from '@/app/components/MiniCalculator';
-import GoogleLoginButton from '@/app/components/GoogleLoginButton';
+import MiniCalculator from '@/components/calculator/MiniCalculator';
+import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
 import { 
   ArrowRight, 
   BarChart3, 

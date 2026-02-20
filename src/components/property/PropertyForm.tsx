@@ -528,7 +528,6 @@ const PropertyForm = ({
     // Debug: Log errors if not valid
     if (!isValid) {
         const fieldErrors = fields.filter(f => errors[f]);
-        console.log('Step validation failed for:', fieldErrors, errors);
         const errorMessages = fieldErrors.map(f => {
             const error = (errors as any)[f];
             return `${f}: ${error?.message || 'inválido'}`;

@@ -187,7 +187,6 @@ export default function ProfilePage() {
       loadData();
     } catch (error) {
       toast.error('Error al subir la imagen');
-      console.log(error);
     } finally {
       setUploading(false);
     }

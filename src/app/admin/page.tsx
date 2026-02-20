@@ -204,6 +204,13 @@ export default async function AdminDashboardPage() {
                                     <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Configuración del Sistema</span>
                                     <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500" />
                                 </button>
+                                <Link href="/admin/logs" className="w-full text-left px-5 py-4 bg-slate-50 hover:bg-slate-100 rounded-2xl flex items-center justify-between group transition-all">
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle size={16} className="text-slate-400 group-hover:text-red-500 transition-colors" />
+                                        <span className="text-xs font-black text-slate-700 uppercase tracking-tight">Logs de Errores</span>
+                                    </div>
+                                    <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500" />
+                                </Link>
                                 <Link href="/admin/feature-flags" className="w-full text-left px-5 py-4 bg-slate-50 hover:bg-slate-100 rounded-2xl flex items-center justify-between group transition-all">
                                     <div className="flex items-center gap-3">
                                         <Flag size={16} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
