@@ -56,8 +56,12 @@ export default function UserMenu({ user }: { user: User | null }) {
     try {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
-        router.push('/');
-        router.refresh();
+        // Clear all local state
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Force a hard reload to ensure all memory state is wiped
+        window.location.href = '/';
     } catch (error) {
         logClientError(error, 'UserMenu.handleSignOut', user?.id);
     }

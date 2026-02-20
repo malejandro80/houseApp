@@ -44,6 +44,13 @@ export async function updateSession(request: NextRequest) {
      return NextResponse.redirect(url)
   }
 
+  // Redirect authenticated users away from login
+  if (user && path === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
   // 3. Role-Based Access Control (RBAC) & Redirections
   if (user) {
       // Optimization: Only fetch profile if the path requires role-based logic
