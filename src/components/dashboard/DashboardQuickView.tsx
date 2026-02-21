@@ -3,33 +3,34 @@
 import React, { useState } from 'react';
 import { Calendar, MessageSquare, User, MapPin, ArrowRight } from 'lucide-react';
 import { Lead } from '@/common/types/leads';
+import { Appointment } from '@/common/types/appointments';
 import Link from 'next/link';
 import { startOfToday, endOfWeek, isBefore, isAfter } from 'date-fns';
 
 interface DashboardQuickViewProps {
-    weeklyVisits: Lead[];
+    weeklyAppointments: Appointment[];
     pendingLeads: Lead[];
 }
 
-export default function DashboardQuickView({ weeklyVisits, pendingLeads }: DashboardQuickViewProps) {
+export default function DashboardQuickView({ weeklyAppointments, pendingLeads }: DashboardQuickViewProps) {
     const [visitTab, setVisitTab] = useState<'this_week' | 'next_week'>('this_week');
 
     const today = startOfToday();
     const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 }); // Monday start
 
     // Exclude overdue appointments
-    const validVisits = (weeklyVisits || []).filter(lead => {
-        const visitDate = new Date(lead.updated_at);
+    const validVisits = (weeklyAppointments || []).filter(appt => {
+        const visitDate = new Date(appt.scheduled_date);
         return !isBefore(visitDate, today);
     });
 
-    const thisWeekVisits = validVisits.filter(lead => {
-        const visitDate = new Date(lead.updated_at);
+    const thisWeekVisits = validVisits.filter(appt => {
+        const visitDate = new Date(appt.scheduled_date);
         return !isAfter(visitDate, endOfCurrentWeek);
     });
 
-    const nextWeekVisits = validVisits.filter(lead => {
-        const visitDate = new Date(lead.updated_at);
+    const nextWeekVisits = validVisits.filter(appt => {
+        const visitDate = new Date(appt.scheduled_date);
         return isAfter(visitDate, endOfCurrentWeek);
     });
 
@@ -79,15 +80,15 @@ export default function DashboardQuickView({ weeklyVisits, pendingLeads }: Dashb
 
                 <div className="flex-1 space-y-4">
                     {displayedVisits.length > 0 ? (
-                        displayedVisits.slice(0, 3).map((lead) => (
-                            <div key={lead.id} className="group p-5 bg-slate-50 rounded-3xl hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
+                        displayedVisits.slice(0, 3).map((appt) => (
+                            <div key={appt.id} className="group p-5 bg-slate-50 rounded-3xl hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-black text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">{lead.title}</h4>
-                                    <span className="text-[10px] font-black text-slate-400">{new Date(lead.updated_at).toLocaleDateString('es-CO')}</span>
+                                    <h4 className="font-black text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">{appt.title}</h4>
+                                    <span className="text-[10px] font-black text-slate-400">{new Date(appt.scheduled_date).toLocaleDateString('es-CO')}</span>
                                 </div>
                                 <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
-                                    <div className="flex items-center gap-1.5"><User size={12} /> {lead.client_name}</div>
-                                    <div className="flex items-center gap-1.5"><MapPin size={12} /> {lead.address_reference || 'Ubicación pendiente'}</div>
+                                    <div className="flex items-center gap-1.5"><User size={12} /> {appt.lead?.client_name || 'Bloqueo Interno'}</div>
+                                    <div className="flex items-center gap-1.5"><MapPin size={12} /> {appt.lead?.address_reference || 'Sin ubicación'}</div>
                                 </div>
                             </div>
                         ))

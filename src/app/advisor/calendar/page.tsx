@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { getWeeklyVisits } from '@/app/actions/leads';
+import { getAdvisorAppointments } from '@/app/actions/appointments';
 import AdvisorCalendarView from '@/components/advisor/AdvisorCalendarView';
 import { Calendar as CalendarIcon, Target } from 'lucide-react';
 
@@ -25,8 +25,8 @@ export default async function AdvisorCalendarPage() {
         return redirect('/my-properties');
     }
 
-    // Usamos la misma función del dashboard rápido para obtener los prospectos en etapa "Visita"
-    const visits = await getWeeklyVisits();
+    // Consultamos directamente la tabla de Appointments para el calendario
+    const appointments = await getAdvisorAppointments();
 
     return (
         <main className="min-h-screen bg-slate-50 relative overflow-hidden">
@@ -54,14 +54,14 @@ export default async function AdvisorCalendarPage() {
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Programadas</p>
-                            <p className="text-xl font-black text-slate-900 leading-tight">{visits.length} Citas</p>
+                            <p className="text-xl font-black text-slate-900 leading-tight">{appointments.length} Citas</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Calendar Component Wrapper */}
                 <div className="mt-8">
-                    <AdvisorCalendarView visits={visits} />
+                    <AdvisorCalendarView appointments={appointments} />
                 </div>
                 
                 <footer className="mt-20 pt-8 border-t border-slate-200 text-center text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">

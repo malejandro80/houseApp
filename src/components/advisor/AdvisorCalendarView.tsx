@@ -5,8 +5,9 @@ import { format, parse, startOfWeek, getDay, startOfDay, isBefore } from 'date-f
 import { useState } from 'react';
 import { es } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { Lead } from '@/common/types/leads';
+import { Appointment } from '@/common/types/appointments';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const locales = {
   'es': es,
@@ -24,28 +25,28 @@ interface VisitEvent extends CalendarEvent {
     title: string;
     start: Date;
     end: Date;
-    resource: Lead;
+    resource: Appointment;
 }
 
-export default function AdvisorCalendarView({ visits }: { visits: Lead[] }) {
+export default function AdvisorCalendarView({ appointments }: { appointments: Appointment[] }) {
     const router = useRouter();
     const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date());
 
-    const events: VisitEvent[] = visits.map(visit => {
-        // En ausencia de un campo específico para la cita de la vista en 'Leads', 
-        // usamos la convención que ya establecimos para la DashboardQuickView (updated_at)
-        const date = new Date(visit.updated_at);
+    const events: VisitEvent[] = appointments.map(appt => {
+        const date = new Date(appt.scheduled_date);
         return {
-            title: visit.title,
+            title: appt.title,
             start: date,
-            end: new Date(date.getTime() + 60 * 60 * 1000), // Asumimos 1 hora
-            resource: visit
+            end: new Date(date.getTime() + (appt.duration_minutes || 60) * 60 * 1000), // Default 1 hr if missing
+            resource: appt
         };
     });
 
     const handleSelectEvent = (event: VisitEvent) => {
-        router.push(`/advisor/inbox?id=${event.resource.id}`);
+        if (event.resource.lead_id) {
+            router.push(`/advisor/inbox?id=${event.resource.lead_id}`);
+        }
     };
 
     const customDayPropGetter = (date: Date) => {
@@ -73,8 +74,8 @@ export default function AdvisorCalendarView({ visits }: { visits: Lead[] }) {
                 endAccessor="end"
                 style={{ height: '100%', fontFamily: 'inherit' }}
                 messages={{
-                    next: "Sig",
-                    previous: "Ant",
+                    next: <ChevronRight size={18} />,
+                    previous: <ChevronLeft size={18} />,
                     today: "Hoy",
                     month: "Mes",
                     week: "Semana",

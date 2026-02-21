@@ -6,7 +6,7 @@ import DashboardQuickView from '@/components/dashboard/DashboardQuickView';
 import { loadAdvisorDashboard } from './loader';
 
 const AdvisorDashboardPage = async () => {
-  const { user, profile, weeklyVisits, pendingLeads } = await loadAdvisorDashboard();
+  const { user, profile, weeklyAppointments, pendingLeads } = await loadAdvisorDashboard();
 
   return (
     <main className="min-h-screen bg-slate-50 relative overflow-hidden">
@@ -47,7 +47,7 @@ const AdvisorDashboardPage = async () => {
         <AdvisorStats userId={user.id} />
 
         {/* Quick View Sections */}
-        <DashboardQuickView weeklyVisits={weeklyVisits} pendingLeads={pendingLeads} />
+        <DashboardQuickView weeklyAppointments={weeklyAppointments} pendingLeads={pendingLeads} />
 
         {/* Managed Properties Section */}
         <div className="mt-20">

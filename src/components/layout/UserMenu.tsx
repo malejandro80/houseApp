@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUserRole } from '@/hooks/useUserRole';
 import { createPortal } from 'react-dom';
 import { logClientError } from '@/lib/logger-client';
+import NotificationDropdown from './NotificationDropdown';
 
 export default function UserMenu({ user }: { user: User | null }) {
   const supabase = createClient();
@@ -105,7 +106,9 @@ export default function UserMenu({ user }: { user: User | null }) {
   );
 
   return (
-    <>
+    <div className="flex items-center gap-2 sm:gap-4">
+      {user && <NotificationDropdown userId={user.id} />}
+      
       <button 
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-3 focus:outline-none bg-white/50 hover:bg-white rounded-full pl-2 pr-1 py-1 transition-all duration-300 border border-slate-200 shadow-sm hover:shadow-md group"
@@ -244,6 +247,6 @@ export default function UserMenu({ user }: { user: User | null }) {
         </AnimatePresence>,
         document.body
       )}
-    </>
+    </div>
   );
 }

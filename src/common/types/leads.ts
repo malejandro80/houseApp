@@ -15,6 +15,7 @@ export interface Lead {
     order_index: number;
     created_at: string;
     updated_at: string;
+    scheduled_date?: string;
 }
 
 export interface KanbanStageWithLeads {
@@ -37,4 +38,8 @@ export interface LeadMessage {
     timestamp: string;
     hasNew: boolean;
     propertyId?: string;
+    sender_id?: string;
+    receiver_id?: string;
+    advisorId?: string;
+    scheduledDate?: string;
 }

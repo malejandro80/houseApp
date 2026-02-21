@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays, startOfToday, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, Clock, X, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { getAdvisorBookedTimes } from '@/app/actions/appointments';
 
 interface CalendlyLikeModalProps {
     isOpen: boolean;
@@ -12,11 +13,27 @@ interface CalendlyLikeModalProps {
     onSchedule: (date: Date) => Promise<void>;
     agentName?: string;
     propertyName?: string;
+    existingDate?: string;
+    advisorId?: string;
 }
 
-export default function CalendlyLikeModal({ isOpen, onClose, onSchedule, agentName = 'El Asesor', propertyName = 'la propiedad' }: CalendlyLikeModalProps) {
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+export default function CalendlyLikeModal({ 
+    isOpen, 
+    onClose, 
+    onSchedule, 
+    agentName = 'El Asesor', 
+    propertyName = 'la propiedad', 
+    existingDate, 
+    advisorId 
+}: CalendlyLikeModalProps) {
+    // Parse existing date if we are in Reschedule mode
+    const parsedExistingDate = existingDate ? new Date(existingDate) : null;
+    const isReschedule = !!existingDate;
+
+    const [selectedDate, setSelectedDate] = useState<Date | null>(parsedExistingDate);
+    const [selectedTime, setSelectedTime] = useState<string | null>(
+        parsedExistingDate ? format(parsedExistingDate, 'HH:mm') : null
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -24,8 +41,35 @@ export default function CalendlyLikeModal({ isOpen, onClose, onSchedule, agentNa
     const today = startOfToday();
     const days = Array.from({ length: 14 }, (_, i) => addDays(today, i));
 
-    // Fake available times
-    const availableTimes = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+    // Fetch dynamically booked slots
+    const [bookedTimes, setBookedTimes] = useState<string[]>([]);
+    const [isLoadingTimes, setIsLoadingTimes] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || !selectedDate || !advisorId) {
+            setBookedTimes([]);
+            return;
+        }
+
+        const fetchTimes = async () => {
+            setIsLoadingTimes(true);
+            try {
+                const times = await getAdvisorBookedTimes(advisorId, selectedDate.toISOString());
+                setBookedTimes(times);
+            } catch (error) {
+                console.error('Failed to fetch booked times', error);
+                setBookedTimes([]);
+            } finally {
+                setIsLoadingTimes(false);
+            }
+        };
+
+        fetchTimes();
+    }, [selectedDate, isOpen, advisorId]);
+
+    // Base available times
+    const baseTimes = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+    const availableTimes = baseTimes.filter(time => !bookedTimes.includes(time));
 
     const handleConfirm = async () => {
         if (!selectedDate || !selectedTime) return;
@@ -77,7 +121,9 @@ export default function CalendlyLikeModal({ isOpen, onClose, onSchedule, agentNa
                             >
                                 <CheckCircle2 size={48} />
                             </motion.div>
-                            <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">¡Visita Agendada!</h2>
+                            <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">
+                                {isReschedule ? '¡Visita Reagendada!' : '¡Visita Agendada!'}
+                            </h2>
                             <p className="text-slate-500 font-medium max-w-sm">
                                 Tu cita con {agentName} para ver {propertyName} ha sido confirmada exitosamente.
                             </p>
@@ -87,9 +133,11 @@ export default function CalendlyLikeModal({ isOpen, onClose, onSchedule, agentNa
                             {/* Left Panel: Info */}
                             <div className="w-full md:w-1/3 bg-slate-50 p-8 md:p-10 border-r border-slate-100 flex flex-col">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-2">HouseApp Scheduler</span>
-                                <h3 className="text-2xl font-black text-slate-900 leading-tight mb-4">Agenda un recorrido</h3>
+                                <h3 className="text-2xl font-black text-slate-900 leading-tight mb-4">
+                                    {isReschedule ? 'Reagenda tu recorrido' : 'Agenda un recorrido'}
+                                </h3>
                                 <p className="text-slate-500 text-sm font-medium mb-8">
-                                    Selecciona el día y hora para conocer {propertyName} junto a {agentName}.
+                                    Selecciona el nuevo día y hora para conocer {propertyName} junto a {agentName}.
                                 </p>
 
                                 <div className="space-y-4 mb-auto">
@@ -147,24 +195,35 @@ export default function CalendlyLikeModal({ isOpen, onClose, onSchedule, agentNa
                                         >
                                             <h4 className="text-sm font-black text-slate-900 mb-6">Selecciona una hora disponible</h4>
                                             
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-                                                {availableTimes.map((time) => {
-                                                    const isSelected = selectedTime === time;
-                                                    return (
-                                                        <button
-                                                            key={time}
-                                                            onClick={() => setSelectedTime(time)}
-                                                            className={`py-4 rounded-xl text-sm font-black transition-all border-2 ${
-                                                                isSelected
-                                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
-                                                                : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-600 hover:text-indigo-600'
-                                                            }`}
-                                                        >
-                                                            {time}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
+                                            {isLoadingTimes ? (
+                                                <div className="flex justify-center items-center py-8">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                                </div>
+                                            ) : availableTimes.length > 0 ? (
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+                                                    {availableTimes.map((time) => {
+                                                        const isSelected = selectedTime === time;
+                                                        return (
+                                                            <button
+                                                                key={time}
+                                                                onClick={() => setSelectedTime(time)}
+                                                                className={`py-4 rounded-xl text-sm font-black transition-all border-2 ${
+                                                                    isSelected
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-600 hover:text-indigo-600'
+                                                                }`}
+                                                            >
+                                                                {time}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 mb-8 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    <p className="text-sm font-black text-slate-400">Todo el día ocupado</p>
+                                                    <p className="text-xs font-medium text-slate-400 mt-1">Por favor elige otra fecha.</p>
+                                                </div>
+                                            )}
 
                                             <div className="flex justify-end pt-4 border-t border-slate-50">
                                                 <button
@@ -172,7 +231,7 @@ export default function CalendlyLikeModal({ isOpen, onClose, onSchedule, agentNa
                                                     onClick={handleConfirm}
                                                     className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                                 >
-                                                    {isSubmitting ? 'Confirmando...' : 'Confirmar Visita'} 
+                                                    {isSubmitting ? 'Confirmando...' : (isReschedule ? 'Reagendar Visita' : 'Confirmar Visita')} 
                                                     {!isSubmitting && <ChevronRight size={18} />}
                                                 </button>
                                             </div>

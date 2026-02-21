@@ -40,24 +40,42 @@ export default function ContactAdvisorModal({
     });
 
     useEffect(() => {
-        if (isOpen && user) {
-            const fetchProfile = async () => {
-                const supabase = createClient();
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('full_name')
-                    .eq('id', user.id)
-                    .single();
+        if (isOpen) {
+            // Set initial message and email (if available) when modal opens
+            setFormData(prev => ({
+                ...prev,
+                email: user?.email || '',
+                message: `¡Hola! Quisiera consultar la disponibilidad y agendar una visita para: ${propertyTitle}`
+            }));
 
-                setFormData(prev => ({
-                    ...prev,
-                    name: profile?.full_name || prev.name,
-                    email: user.email || prev.email
-                }));
-            };
-            fetchProfile();
+            if (user) {
+                const fetchProfile = async () => {
+                    const supabase = createClient();
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', user.id)
+                        .single();
+
+                    setFormData(prev => ({
+                        ...prev,
+                        name: profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+                        phone: user?.phone || user?.user_metadata?.phone || user?.user_metadata?.phone_number || ''
+                    }));
+                };
+                fetchProfile();
+            }
+        } else {
+            // Reset form when closed
+            setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                message: ''
+            });
+            setIsSubmitted(false);
         }
-    }, [isOpen, user]);
+    }, [isOpen, user, propertyTitle]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,7 +116,7 @@ export default function ContactAdvisorModal({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100]"
+                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[9998]"
                     />
 
                     {/* Modal */}
@@ -106,7 +124,7 @@ export default function ContactAdvisorModal({
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl z-[110] overflow-hidden"
+                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl z-[9999] overflow-hidden"
                     >
                         {!isSubmitted ? (
                             <form onSubmit={handleSubmit} className="p-8 sm:p-10">

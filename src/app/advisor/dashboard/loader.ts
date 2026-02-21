@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { getWeeklyVisits, getPendingLeads } from '@/app/actions/leads';
+import { getPendingLeads } from '@/app/actions/leads';
+import { getAdvisorAppointments } from '@/app/actions/appointments';
 
 export const loadAdvisorDashboard = async () => {
     const supabase = await createClient();
@@ -25,15 +26,15 @@ export const loadAdvisorDashboard = async () => {
     }
 
     // Fetch quick view data
-    const [weeklyVisits, pendingLeads] = await Promise.all([
-        getWeeklyVisits(),
+    const [weeklyAppointments, pendingLeads] = await Promise.all([
+        getAdvisorAppointments(),
         getPendingLeads()
     ]);
 
     return {
         user,
         profile,
-        weeklyVisits,
+        weeklyAppointments,
         pendingLeads
     };
 };

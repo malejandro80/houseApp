@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createClient as createSupClient } from '@supabase/supabase-js';
 
 import { Lead, KanbanStageWithLeads, LeadMessage } from '@/common/types/leads';
 
@@ -324,7 +325,9 @@ export async function getAdvisorLeads(): Promise<LeadMessage[]> {
         status: (lead.metadata && lead.metadata.read_by_advisor === true) ? 'replied' : (lead.stage_id ? 'new' : 'archived'),
         timestamp: new Date(lead.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
         hasNew: !(lead.metadata && lead.metadata.read_by_advisor === true),
-        propertyId: lead.property_id
+        propertyId: lead.property_id,
+        advisorId: user.id,
+        scheduledDate: lead.scheduled_date
     }));
 }
 
@@ -372,12 +375,13 @@ export async function getUserInquiries(): Promise<LeadMessage[]> {
             status: (lead.metadata && lead.metadata.read_by_user === true) ? 'sent' : 'replied',
             timestamp: new Date(lead.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
             hasNew: !(lead.metadata && lead.metadata.read_by_user === true),
-            propertyId: lead.property_id
+            propertyId: lead.property_id,
+            advisorId: lead.advisor_id,
+            scheduledDate: lead.scheduled_date
         }));
     } catch (err: any) {
         console.error('Server Action getUserInquiries failed:', err);
         try {
-            const { createClient: createSupClient } = require('@supabase/supabase-js');
             const admin = createSupClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
             await admin.from('error_logs').insert({ 
                 user_id: user?.id,
@@ -400,19 +404,105 @@ export async function scheduleVisit(leadId: string, scheduledDate: Date) {
     const { data: stage } = await supabase
         .from('kanban_stages')
         .select('id')
-        .eq('slug', 'visita')
+        .ilike('name', '%Visita%') // Match anything with "Visita" in the name to be safe
         .single();
     if (!stage) throw new Error('Stage not found');
 
-    const { error } = await supabase
+    // 1. Get the current lead to verify identity and get its property info
+    const { data: currentLead } = await supabase
+        .from('leads')
+        .select('advisor_id, title, property:properties(title, address)')
+        .eq('id', leadId)
+        .single();
+        
+    if (!currentLead) throw new Error('Lead not found');
+    const advisorId = currentLead.advisor_id;
+
+    // 1. Check if we are rescheduling purely based on having an existing active appointment
+    const { data: existingAppts } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('lead_id', leadId)
+        .eq('status', 'scheduled')
+        .limit(1);
+
+    const isReschedule = existingAppts && existingAppts.length > 0;
+
+    // 2. Validate Anti-Collision (Double Booking) in the appointments table
+    // Build interval: 30 minutes before and 30 minutes after to prevent overlap
+    const proposedTime = scheduledDate.getTime();
+    const thirtyMins = 30 * 60 * 1000;
+    const minTime = new Date(proposedTime - thirtyMins).toISOString();
+    const maxTime = new Date(proposedTime + thirtyMins).toISOString();
+
+    const { data: overlappingVisits } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('advisor_id', advisorId)
+        .eq('status', 'scheduled') // only clash with active appointments
+        .gte('scheduled_date', minTime)
+        .lte('scheduled_date', maxTime);
+
+    if (overlappingVisits && overlappingVisits.length > 0) {
+        throw new Error('COLLISION: El asesor ya tiene una visita programada en este cruce de horario.');
+    }
+
+    // Initialize Admin client to bypass RLS on updates
+    const adminSupabase = createSupClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // 3. Update existing appointments for this lead to 'rescheduled'
+    if (isReschedule) {
+        await adminSupabase
+            .from('appointments')
+            .update({ status: 'rescheduled', updated_at: new Date().toISOString() })
+            .eq('lead_id', leadId)
+            .eq('status', 'scheduled');
+    }
+
+    // 4. Insert the new Appointment into the new architecture table
+    const propertyTitle = (currentLead as any).property?.title || (currentLead as any).property?.address || currentLead.title || 'Propiedad de interés';
+
+    const { error: apptError } = await adminSupabase
+        .from('appointments')
+        .insert({
+            advisor_id: advisorId,
+            lead_id: leadId,
+            title: `Visita: ${propertyTitle}`,
+            scheduled_date: scheduledDate.toISOString(),
+            duration_minutes: 60,
+            type: 'visit',
+            status: 'scheduled'
+        });
+
+    if (apptError) throw apptError;
+
+    // 3. Update the Lead (Using admin client because clients cannot update their own leads due to RLS)
+    const { error } = await adminSupabase
         .from('leads')
         .update({
             stage_id: stage.id,
-            updated_at: scheduledDate.toISOString(),
+            scheduled_date: scheduledDate.toISOString(),
+            updated_at: new Date().toISOString(),
         })
         .eq('id', leadId);
         
     if (error) throw error;
+    
+    // 4. Set system message for the Chat
+    const dateString = scheduledDate.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+    const msgText = isReschedule 
+        ? `🔄 Se ha REPROGRAMADO la visita presencial. Nueva fecha: ${dateString}.`
+        : `🗓️ Se ha agendado una visita presencial para el día ${dateString}.`;
+
+    await adminSupabase.from('messages').insert({
+        lead_id: leadId,
+        sender_id: user.id,
+        message: msgText
+    });
+
     revalidatePath('/advisor/pipeline');
     revalidatePath('/advisor/calendar');
     revalidatePath('/advisor/inbox');
@@ -466,7 +556,7 @@ export async function getLeadMessages(leadId: string) {
     try {
 
         const { data, error } = await supabase
-            .from('lead_messages')
+            .from('messages')
             .select(`
                 id,
                 message,
@@ -503,37 +593,45 @@ export async function sendChatMessage(leadId: string, message: string) {
     if (!user) throw new Error('Unauthorized');
 
     try {
-        
+        // Initialize Admin client to bypass RLS on metadata updates (clients can't modify leads)
+        const adminSupabase = createSupClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        const { data: lead } = await supabase.from('leads').select('advisor_id, created_by, metadata').eq('id', leadId).single();
+        if (!lead) throw new Error('Lead not found');
+
+        const isAdvisor = lead.advisor_id === user.id;
+        const receiverId = isAdvisor ? lead.created_by : lead.advisor_id;
+
         // insert message
         const { error } = await supabase
-            .from('lead_messages')
+            .from('messages')
             .insert({
                 lead_id: leadId,
                 sender_id: user.id,
+                receiver_id: receiverId,
                 message: message
             });
             
         if (error) throw error;
         
         // update lead metadata so it shows as unread for the OTHER party
-        const { data: lead } = await supabase.from('leads').select('advisor_id, created_by, metadata').eq('id', leadId).single();
-        if (lead) {
-            const isAdvisor = lead.advisor_id === user.id;
-            const currentMetadata = lead.metadata || {};
-            
-            if (isAdvisor) {
-                currentMetadata.read_by_user = false;
-            } else {
-                currentMetadata.read_by_advisor = false;
-            }
-            
-            const { error: updateError } = await supabase.from('leads').update({
-                metadata: currentMetadata,
-                updated_at: new Date().toISOString()
-            }).eq('id', leadId);
-            
-            if (updateError) throw updateError;
+        const currentMetadata = lead.metadata || {};
+        
+        if (isAdvisor) {
+            currentMetadata.read_by_user = false;
+        } else {
+            currentMetadata.read_by_advisor = false;
         }
+        
+        const { error: updateError } = await adminSupabase.from('leads').update({
+            metadata: currentMetadata,
+            updated_at: new Date().toISOString()
+        }).eq('id', leadId);
+        
+        if (updateError) throw updateError;
         
     } catch (e: any) {
         try {

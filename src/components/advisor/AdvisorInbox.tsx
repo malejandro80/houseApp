@@ -21,6 +21,7 @@ import {
     Loader2,
     Calendar
 } from 'lucide-react';
+import { useSocket } from '@/hooks/useSocket';
 
 import { 
     getAdvisorLeads,
@@ -50,6 +51,10 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
     const [advisorReply, setAdvisorReply] = useState('');
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [isTyping, setIsTyping] = useState<Record<string, boolean>>({});
+    const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const lastTypingTimeRef = React.useRef<number>(0);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
     const supabase = createClient();
 
@@ -91,76 +96,94 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
         getLeadMessages(activeId).then(setChatMessages);
     }, [activeId, messages, mode]);
 
-    React.useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null));
-
-        // Realtime Subscription for chat and notifications
-        const channel = supabase
-            .channel('realtime_inbox')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lead_messages' }, 
-                (payload) => {
-                    const newMsg = payload.new;
-                    
-                    // Signal verification for sender and receiver only
-                    if (newMsg.sender_id === currentUserId || newMsg.receiver_id === currentUserId) {
-                        if (newMsg.lead_id === activeId) {
-                            setChatMessages((prev) => {
-                                // Deduplicate self-sent optimistic updates by checking message text match within a short time window.
-                                const existingIdx = prev.findIndex(m => m.id === newMsg.id || (m.sender_id === newMsg.sender_id && m.message === newMsg.message && Math.abs(new Date(m.created_at).getTime() - new Date(newMsg.created_at).getTime()) < 10000));
-                                
-                                if (existingIdx >= 0) {
-                                    // Replace optimistic with real database record
-                                    const copy = [...prev];
-                                    copy[existingIdx] = newMsg;
-                                    return copy;
-                                }
-                                // Append new message coming from the other person
-                                return [...prev, newMsg];
-                            });
-                            if (activeId && newMsg.receiver_id === currentUserId) {
-                                markLeadAsRead(activeId).catch(() => {});
+    // Abstraction of the socket connection
+    const { emitEvent: _emitSocketEvent } = useSocket('realtime_inbox', (event: any) => {
+        const { type, payload } = event;
+        switch (type) {
+            case 'NEW_MESSAGE':
+                const newMsg = payload;
+                if (newMsg.sender_id === currentUserId || newMsg.receiver_id === currentUserId) {
+                    if (newMsg.lead_id === activeId) {
+                        setChatMessages((prev) => {
+                            const existingIdx = prev.findIndex(m => m.id === newMsg.id || (m.sender_id === newMsg.sender_id && m.message === newMsg.message && Math.abs(new Date(m.created_at).getTime() - new Date(newMsg.created_at).getTime()) < 10000));
+                            if (existingIdx >= 0) {
+                                const copy = [...prev];
+                                copy[existingIdx] = newMsg;
+                                // Clear typing indicator when message arrives
+                                setIsTyping(prevTyping => ({ ...prevTyping, [newMsg.lead_id]: false }));
+                                return copy;
                             }
-                        } else {
-                            // Update chat history/notifications globally since either I sent it from another device or I received it
-                            fetchData();
+                            // Clear typing indicator when message arrives
+                            setIsTyping(prevTyping => ({ ...prevTyping, [newMsg.lead_id]: false }));
+                            return [...prev, newMsg];
+                        });
+                        if (activeId && newMsg.receiver_id === currentUserId) {
+                            markLeadAsRead(activeId).catch(() => {});
                         }
+                    } else {
+                        fetchData();
                     }
                 }
-            )
-            .subscribe();
+                break;
+            case 'TYPING':
+                if (payload.sender_id !== currentUserId && payload.lead_id === activeId) {
+                    setIsTyping(prev => ({ ...prev, [payload.lead_id]: true }));
+                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => {
+                        setIsTyping(prev => ({ ...prev, [payload.lead_id]: false }));
+                    }, 3000);
+                }
+                break;
+            case 'NEW_NOTIFICATION':
+                fetchData();
+                break;
+            default:
+                console.log('Unknown socket event type:', type);
+        }
+    });
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [activeId, supabase]);
+    React.useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null));
+    }, [supabase]);
 
     const handleSendMessage = async () => {
         if (!advisorReply.trim() || !activeId) return;
+
+        const currentActiveMessage = messages.find(m => m.id === activeId);
         
-        const messageToSend = advisorReply;
-        setAdvisorReply('');
-        
-        // Optimistic UI Update (Instant Render)
-        const tempMsgId = crypto.randomUUID();
-        const optimisticMsg = {
-            id: tempMsgId,
+        const optimisticMessage = {
+            id: `temp-${Date.now()}`,
             lead_id: activeId,
-            sender_id: currentUserId || '',
-            message: messageToSend,
-            created_at: new Date().toISOString()
+            sender_id: currentUserId,
+            receiver_id: mode === 'advisor' ? currentActiveMessage?.sender_id : currentActiveMessage?.receiver_id,
+            message: advisorReply.trim(),
+            created_at: new Date().toISOString(),
+            isOptimistic: true // UI flag
         };
-        setChatMessages(prev => [...prev, optimisticMsg]);
-        
+        setChatMessages(prev => [...prev, optimisticMessage]);
+        setAdvisorReply(''); // Clear input immediately
+
         try {
             // Background HTTP DB Mutation
-            await sendChatMessage(activeId, messageToSend);
-        } catch (error) {
-            console.error(error);
+            await sendChatMessage(activeId, optimisticMessage.message);
+        } catch (error: any) {
             // Revert on failure
-            setChatMessages(prev => prev.filter(m => m.id !== tempMsgId));
-            toast.error('Error al enviar mensaje');
+            console.error('Failed sending message', error);
+            setChatMessages(prev => prev.filter(m => m.id !== optimisticMessage.id)); // rollback
+            toast.error("Error al enviar el mensaje", {
+                description: "Verifica tu conexión y vuelve a intentarlo.",
+                icon: <AlertCircle size={14} className="text-red-500" />
+            });
         }
     };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    React.useEffect(() => {
+        scrollToBottom();
+    }, [chatMessages]);
 
     const activeMessage = messages.find(m => m.id === activeId);
 
@@ -330,6 +353,8 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                                 {/* Dynamic DB Messages */}
                                 {chatMessages.map(msg => {
                                     const isMine = msg.sender_id === currentUserId;
+                                    const isAgendarCitaMsg = msg.message.includes('me gustaría invitarte a conocer la propiedad. Por favor haz clic en el botón');
+                                    
                                     return (
                                         <div key={msg.id} className={`flex flex-col gap-2 max-w-2xl ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
                                             <div className={`p-5 rounded-3xl shadow-sm ${
@@ -340,6 +365,23 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                                                 <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
                                                     {msg.message}
                                                 </p>
+                                                
+                                                {/* INJECT CTA IF IT PINGS FOR AN APPOINTMENT */}
+                                                {isAgendarCitaMsg && mode === 'user' && (
+                                                    <button 
+                                                        onClick={() => setIsScheduleModalOpen(true)}
+                                                        className="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                                                    >
+                                                        <Calendar size={16} />
+                                                        Agendar Cita Ahora
+                                                    </button>
+                                                )}
+                                                {isAgendarCitaMsg && mode === 'advisor' && (
+                                                    <div className="mt-4 w-full py-3 bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                                        <Calendar size={16} />
+                                                        Invitación Enviada
+                                                    </div>
+                                                )}
                                             </div>
                                             <span className="text-[10px] text-slate-400 font-bold px-2 whitespace-nowrap">
                                                 {new Date(msg.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })} • {isMine ? 'Enviado' : 'Recibido'}
@@ -347,6 +389,21 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                                         </div>
                                     );
                                 })}
+                                
+                                {activeId && isTyping[activeId] && (
+                                    <div className="flex flex-col gap-2 max-w-2xl self-start items-start animate-pulse">
+                                        <div className="p-4 px-5 bg-slate-100 rounded-3xl rounded-tl-none border border-slate-200 text-slate-500 shadow-sm flex items-center gap-2">
+                                            <div className="flex gap-1">
+                                                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            </div>
+                                            <span className="text-xs font-medium ml-1">Escribiendo...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <div ref={messagesEndRef} />
                             </div>
 
                             {/* Reply Box */}
@@ -372,7 +429,16 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                                     <div className="relative">
                                         <textarea 
                                             value={advisorReply}
-                                            onChange={(e) => setAdvisorReply(e.target.value)}
+                                            onChange={(e) => {
+                                                setAdvisorReply(e.target.value);
+                                                if (activeId && currentUserId) {
+                                                    const now = Date.now();
+                                                    if (now - lastTypingTimeRef.current > 2000) {
+                                                        _emitSocketEvent('TYPING', { sender_id: currentUserId, lead_id: activeId });
+                                                        lastTypingTimeRef.current = now;
+                                                    }
+                                                }
+                                            }}
                                             placeholder="Escribe tu mensaje..."
                                             className="w-full p-6 pb-16 bg-slate-50 border border-slate-200 rounded-[2rem] text-sm font-medium focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none"
                                             rows={3}
@@ -429,6 +495,8 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                     onClose={() => setIsScheduleModalOpen(false)}
                     agentName={mode === 'advisor' ? 'ti' : activeMessage.senderName}
                     propertyName={activeMessage.propertyTitle}
+                    existingDate={activeMessage.scheduledDate}
+                    advisorId={activeMessage.advisorId}
                     onSchedule={async (date) => {
                         try {
                             await scheduleVisit(activeMessage.id, date);
