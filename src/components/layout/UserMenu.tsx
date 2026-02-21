@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem, Trello, MessageSquare, ShieldCheck, Users, User as UserIcon, Flag, Wallet, FileText } from 'lucide-react';
+import { UserCircle, Calculator, Building2, Map, BarChart3, LogOut, X, Menu, Gem, Trello, MessageSquare, ShieldCheck, Users, User as UserIcon, Flag, Wallet, FileText, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserRole } from '@/hooks/useUserRole';
 import { createPortal } from 'react-dom';
@@ -91,6 +91,7 @@ export default function UserMenu({ user }: { user: User | null }) {
     { name: 'Feature Flags', href: '/admin/feature-flags', icon: Flag, roles: ['superadmin'] },
     { name: 'Solicitudes Asesores', href: '/admin/advisors', icon: Users, roles: ['superadmin'] },
     { name: 'Pipeline de Ventas', href: '/advisor/pipeline', icon: Trello, roles: ['asesor', 'superadmin'] },
+    { name: 'Calendario de Visitas', href: '/advisor/calendar', icon: Calendar, roles: ['asesor', 'superadmin'] },
     { name: 'Mis Mensajes', href: '/advisor/inbox', icon: MessageSquare, roles: ['asesor', 'superadmin'] },
     { name: 'Billetera Digital', href: '/wallet', icon: Wallet, roles: ['usuario', 'asesor', 'superadmin'] },
     { name: 'Documentos Legales', href: '/advisor/documents', icon: FileText, roles: ['asesor', 'superadmin'] },

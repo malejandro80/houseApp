@@ -412,13 +412,7 @@ function KanbanCard({ task, isOverlay, onEdit, onDelete }: { task: Lead, isOverl
             {...listeners} 
             className={`group relative bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 ${isOverlay ? 'cursor-grabbing' : 'cursor-grab'}`}
         >
-            <div className="flex items-start justify-between mb-4">
-                <span className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${
-                    task.priority === 'high' ? 'bg-indigo-100 text-indigo-600' : task.priority === 'medium' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'
-                }`}>
-                    {task.priority === 'high' ? 'Prioridad Alta' : task.priority === 'medium' ? 'Media' : 'Baja'}
-                </span>
-                
+            <div className="flex items-start justify-end mb-4">
                 <div className="relative">
                     <button 
                         onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }} 
@@ -540,25 +534,6 @@ function NewTaskModal({ onClose, onSubmit, lead }: { onClose: () => void, onSubm
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dirección / Referencia</label>
                             <input type="text" placeholder="Calle ... o Conjunto ..." className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" value={formData.address_reference} onChange={e => setFormData({...formData, address_reference: e.target.value})} />
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prioridad</label>
-                            <div className="flex gap-3">
-                                {(['low', 'medium', 'high'] as const).map((p) => (
-                                    <button 
-                                        key={p} 
-                                        onClick={() => setFormData({ ...formData, priority: p })} 
-                                        className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                                            formData.priority === p 
-                                            ? p === 'high' ? 'bg-indigo-50 border-indigo-600 text-indigo-700' : p === 'medium' ? 'bg-blue-50 border-blue-600 text-blue-700' : 'bg-slate-50 border-slate-600 text-slate-700'
-                                            : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        {p === 'high' ? 'Alta' : p === 'medium' ? 'Media' : 'Baja'}
-                                    </button>
-                                ))}
-                            </div>
                         </div>
                     </div>
 

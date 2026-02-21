@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
-import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon, MoreVertical, ExternalLink, Eye, Share2, PauseCircle, PlayCircle, AlertTriangle } from 'lucide-react';
+import { Building2, MapPin, TrendingUp, DollarSign, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Filter, Edit2, Trash2, Target, Map as MapIcon, MoreVertical, ExternalLink, Eye, Share2, PauseCircle, PlayCircle, AlertTriangle, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -54,6 +54,8 @@ export default function MyPropertiesTable({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPurpose, setFilterPurpose] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -86,6 +88,15 @@ export default function MyPropertiesTable({
   }, []);
 
   useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
     const fetchProperties = async () => {
       setLoading(true);
       const from = (page - 1) * PAGE_SIZE;
@@ -102,7 +113,17 @@ export default function MyPropertiesTable({
         `, { count: 'exact' });
 
       if (viewMode === 'advisor') {
-        query = query.or(`assigned_advisor_id.eq.${userId},user_id.eq.${userId}`);
+        const { data: leads } = await supabase
+            .from('leads')
+            .select('property_id')
+            .eq('advisor_id', userId);
+        
+        const leadPropertyIds = leads ? Array.from(new Set(leads.map(l => l.property_id).filter(Boolean))) : [];
+        let orQuery = `assigned_advisor_id.eq.${userId},user_id.eq.${userId}`;
+        if (leadPropertyIds.length > 0) {
+            orQuery += `,id.in.(${leadPropertyIds.join(',')})`;
+        }
+        query = query.or(orQuery);
       } else {
         query = query.eq('user_id', userId);
       }
@@ -115,6 +136,27 @@ export default function MyPropertiesTable({
         query = query.eq('purpose', filterPurpose);
       }
 
+      const trimmedSearch = debouncedSearchQuery.trim();
+      if (trimmedSearch) {
+          // Ignoramos puntuación y acentos. Cambiamos vocales por "_" (comodín SQL a nivel de caracter)
+          // para soportar búsquedas insensibles a tildes directo en Supabase ilike sin requerir extensiones.
+          const cleanTextSearch = trimmedSearch
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+              .replace(/[aeiou]/gi, '_')
+              .replace(/[^\w\s_]/gi, ' ')
+              .trim()
+              .replace(/\s+/g, '%');
+          const numericQuery = parseFloat(trimmedSearch.replace(/[^0-9.-]+/g,""));
+          let textSearch = `title.ilike.%${cleanTextSearch}%,address.ilike.%${cleanTextSearch}%`;
+          
+          if (!isNaN(numericQuery) && trimmedSearch.match(/\d/)) {
+              textSearch += `,sale_price.eq.${numericQuery}`;
+          }
+          // Supabase allows chaining multiple filters but they act as ANDs. To do an OR across multiple columns we use .or()
+          // We have to be careful if we already have an .or() for advisor assignments. The safest way is to chain them.
+          query = query.or(textSearch);
+      }
+
       const orderByColumn = sortBy === 'price_m2' ? 'sale_price' : sortBy;
       const { data, count, error } = await query
         .order(orderByColumn, { ascending: sortOrder === 'asc' })
@@ -123,14 +165,38 @@ export default function MyPropertiesTable({
       if (error) {
         logClientError(error, 'MyPropertiesTable.fetchProperties', userId);
       } else {
-        setProperties(data as SavedProperty[]);
+        const propertiesData = data as SavedProperty[];
+        
+        // Fetch views if advisor
+        if (viewMode === 'advisor' && propertiesData.length > 0) {
+            const propertyIds = propertiesData.map(p => p.id);
+            const { data: eventsData, error: eventsError } = await supabase
+                .from('property_events')
+                .select('property_id')
+                .eq('event_type', 'view')
+                .in('property_id', propertyIds);
+                
+            if (!eventsError && eventsData) {
+                // Count occurrences
+                const counts: Record<string, number> = {};
+                eventsData.forEach(ev => {
+                    counts[ev.property_id] = (counts[ev.property_id] || 0) + 1;
+                });
+                // Attach to property
+                propertiesData.forEach(p => {
+                    p.view_count = counts[p.id] || 0;
+                });
+            }
+        }
+
+        setProperties(propertiesData);
         if (count !== null) setTotalCount(count);
       }
       setLoading(false);
     };
 
     fetchProperties();
-  }, [userId, supabase, page, sortBy, sortOrder, filterType, filterPurpose]);
+  }, [userId, supabase, page, sortBy, sortOrder, filterType, filterPurpose, debouncedSearchQuery]);
 
   const handlePublish = async (propertyId: string) => {
     setPublishingId(propertyId);
@@ -155,43 +221,6 @@ export default function MyPropertiesTable({
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  if (loading && properties.length === 0) return <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2"><div className="animate-spin h-5 w-5 border-2 border-indigo-500 rounded-full border-t-transparent"></div> Cargando tus propiedades...</div>;
-
-  if (!loading && properties.length === 0) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center p-12 bg-white rounded-3xl border border-gray-100 shadow-2xl relative overflow-hidden"
-      >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-        <div className="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Target className="h-10 w-10 text-indigo-600 animate-pulse" />
-        </div>
-        <h3 className="text-2xl font-black text-gray-900 mb-2">Tu portafolio comienza aquí</h3>
-        <p className="text-gray-700 max-w-md mx-auto mb-8 font-bold">
-            Analiza tu primera inversión o publica tu propiedad para encontrar al comprador ideal. HouseApp te guía en cada paso.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-                onClick={() => router.push('/calculator')}
-                className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 !text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
-            >
-                <TrendingUp className="mr-2 h-5 w-5" />
-                Analizar Inversión
-            </button>
-            <button 
-                onClick={() => router.push('/map')}
-                className="inline-flex items-center justify-center px-8 py-4 bg-white text-gray-700 font-bold rounded-2xl border border-gray-200 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-            >
-                <MapIcon className="mr-2 h-5 w-5" />
-                Explorar el Mercado
-            </button>
-        </div>
-      </motion.div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-4">
       {/* Filters and Controls */}
@@ -200,6 +229,21 @@ export default function MyPropertiesTable({
           
           {/* Left: Filters */}
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="relative group w-full sm:w-48">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar (nombre, zona, precio)..."
+                className="block w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:bg-white uppercase tracking-tight"
+                value={searchQuery}
+                onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                }}
+              />
+            </div>
+
             <div className="relative group w-full sm:w-48">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Filter className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
@@ -253,7 +297,7 @@ export default function MyPropertiesTable({
                       onChange={(e) => { setSortBy(e.target.value as any); setPage(1); }}
                   >
                       {viewMode === 'advisor' ? (
-                          <option value="view_count">Más Vistas</option>
+                          <option value="created_at">Más Recientes</option>
                       ) : (
                           <option value="profitability">Mayor Rentabilidad</option>
                       )}
@@ -277,7 +321,46 @@ export default function MyPropertiesTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+      {loading && properties.length === 0 ? (
+        <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2"><div className="animate-spin h-5 w-5 border-2 border-indigo-500 rounded-full border-t-transparent"></div> Cargando tus propiedades...</div>
+      ) : !loading && properties.length === 0 ? (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center p-12 bg-white rounded-3xl border border-gray-100 shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+          <div className="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Target className="h-10 w-10 text-indigo-600 animate-pulse" />
+          </div>
+          <h3 className="text-2xl font-black text-gray-900 mb-2">
+              {debouncedSearchQuery || filterType !== 'all' || filterPurpose !== 'all' ? 'No se encontraron resultados' : 'Tu portafolio comienza aquí'}
+          </h3>
+          <p className="text-gray-700 max-w-md mx-auto mb-8 font-bold">
+              {debouncedSearchQuery || filterType !== 'all' || filterPurpose !== 'all' 
+                  ? 'Intenta ajustar tus filtros o término de búsqueda para encontrar lo que buscas.' 
+                  : 'Analiza tu primera inversión o publica tu propiedad para encontrar al comprador ideal. HouseApp te guía en cada paso.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button 
+                  onClick={() => router.push('/calculator')}
+                  className="inline-flex items-center justify-center px-8 py-4 bg-indigo-600 !text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+              >
+                  <TrendingUp className="mr-2 h-5 w-5" />
+                  Analizar Inversión
+              </button>
+              <button 
+                  onClick={() => router.push('/map')}
+                  className="inline-flex items-center justify-center px-8 py-4 bg-white text-gray-700 font-bold rounded-2xl border border-gray-200 hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+              >
+                  <MapIcon className="mr-2 h-5 w-5" />
+                  Explorar el Mercado
+              </button>
+          </div>
+        </motion.div>
+      ) : (
+        <>
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
         <table className="min-w-full divide-y divide-slate-200 bg-white">
           <thead className="bg-slate-50">
             <tr>
@@ -531,6 +614,8 @@ export default function MyPropertiesTable({
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {/* Action Menu Portal - Moved outside the loop */}

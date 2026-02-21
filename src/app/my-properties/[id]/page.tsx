@@ -14,7 +14,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
       .select(`
         *,
         owner:property_owners(*),
-        assigned_advisor:assigned_advisor_id(full_name)
+        assigned_advisor:assigned_advisor_id(full_name, avatar_url)
       `)
       .eq('id', id)
       .single()

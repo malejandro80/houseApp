@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Building2, MapPin, BedDouble, Bath, Car, Maximize, DollarSign, Calendar, Phone, Mail, MessageCircle, ShieldAlert, BadgeCheck, Pencil, User, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PropertyMapWrapper from '@/components/property/PropertyMapWrapper';
 import { calculateProfitabilityForList, getHealthLabel } from '@/lib/financial-utils';
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -45,6 +45,7 @@ interface PropertyDetail {
   assigned_advisor_id: string | null;
   assigned_advisor?: {
     full_name: string;
+    avatar_url?: string;
   } | null;
 }
 
@@ -79,6 +80,7 @@ const PropertyDetailClient = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const isLightboxOpen = selectedImageIndex !== null;
+  const hasLoggedView = useRef<string | null>(null);
 
   // Auto-open modal if returning from login
   useEffect(() => {
@@ -106,12 +108,22 @@ const PropertyDetailClient = ({
       if (p.isOwner || (p.assigned_advisor_id && user?.id === p.assigned_advisor_id)) {
         return;
       }
+      
+      // Prevent double logging in React StrictMode
+      if (hasLoggedView.current === p.id) {
+        return;
+      }
+      
+      hasLoggedView.current = p.id;
 
-      try {
+        try {
           await supabase
-            .from('properties')
-            .update({ view_count: (p.view_count || 0) + 1 })
-            .eq('id', p.id);
+            .from('property_events')
+            .insert({ 
+                property_id: p.id,
+                event_type: 'view',
+                viewer_user_id: user?.id || null
+            });
       } catch (error) {
           // Silent fail for analytics but log it
           logClientError(error, 'PropertyDetailClient.incrementView', user?.id, { propertyId: p.id });
@@ -484,8 +496,17 @@ const PropertyDetailClient = ({
                 {/* Advisor Card for public properties */}
                 {p.purpose === 'sale' && !p.isOwner && !isExpert && (
                     <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100/50 text-center">
-                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-indigo-100">
-                            <User className="text-indigo-600" size={32} />
+                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-indigo-100 overflow-hidden relative">
+                            {p.assigned_advisor?.avatar_url ? (
+                                <Image
+                                    src={p.assigned_advisor.avatar_url}
+                                    alt={p.assigned_advisor.full_name || 'Experto Local'}
+                                    fill
+                                    className="object-cover"
+                                />
+                            ) : (
+                                <User className="text-indigo-600" size={32} />
+                            )}
                          </div>
                          <h4 className="font-black text-slate-900 mb-1">{p.assigned_advisor?.full_name || 'Experto Local'}</h4>
                          <p className="text-xs text-indigo-600 font-bold uppercase tracking-widest mb-6 px-4">Asesor Asignado</p>

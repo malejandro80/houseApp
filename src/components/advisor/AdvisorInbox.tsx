@@ -18,16 +18,23 @@ import {
     User,
     ChevronRight,
     SearchX,
-    Loader2
+    Loader2,
+    Calendar
 } from 'lucide-react';
 
 import { 
     getAdvisorLeads,
-    getUserInquiries
+    getUserInquiries,
+    scheduleVisit,
+    markLeadAsRead,
+    getLeadMessages,
+    sendChatMessage
 } from '@/app/actions/leads';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 import { LeadMessage } from '@/common/types/leads';
+import CalendlyLikeModal from '@/components/shared/CalendlyLikeModal';
 
 interface AdvisorInboxProps {
     mode?: 'advisor' | 'user';
@@ -39,6 +46,12 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [activeId, setActiveId] = useState<string | null>(searchParams.get('id'));
     const [searchQuery, setSearchQuery] = useState('');
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [advisorReply, setAdvisorReply] = useState('');
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    const supabase = createClient();
 
     const fetchData = async () => {
         try {
@@ -61,6 +74,93 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
     React.useEffect(() => {
         fetchData();
     }, []);
+
+    React.useEffect(() => {
+        if (!activeId) return;
+
+        const currentMessage = messages.find(m => m.id === activeId);
+        if (currentMessage && currentMessage.hasNew) {
+            // Optimistically update UI
+            setMessages(prev => prev.map(m => m.id === activeId ? { ...m, hasNew: false, status: mode === 'advisor' ? 'replied' : 'sent' } : m));
+
+            // Inform server
+            markLeadAsRead(activeId).catch(err => console.error("Could not mark as read", err));
+        }
+
+        // Fetch chat messages
+        getLeadMessages(activeId).then(setChatMessages);
+    }, [activeId, messages, mode]);
+
+    React.useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null));
+
+        // Realtime Subscription for chat and notifications
+        const channel = supabase
+            .channel('realtime_inbox')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lead_messages' }, 
+                (payload) => {
+                    const newMsg = payload.new;
+                    
+                    // Signal verification for sender and receiver only
+                    if (newMsg.sender_id === currentUserId || newMsg.receiver_id === currentUserId) {
+                        if (newMsg.lead_id === activeId) {
+                            setChatMessages((prev) => {
+                                // Deduplicate self-sent optimistic updates by checking message text match within a short time window.
+                                const existingIdx = prev.findIndex(m => m.id === newMsg.id || (m.sender_id === newMsg.sender_id && m.message === newMsg.message && Math.abs(new Date(m.created_at).getTime() - new Date(newMsg.created_at).getTime()) < 10000));
+                                
+                                if (existingIdx >= 0) {
+                                    // Replace optimistic with real database record
+                                    const copy = [...prev];
+                                    copy[existingIdx] = newMsg;
+                                    return copy;
+                                }
+                                // Append new message coming from the other person
+                                return [...prev, newMsg];
+                            });
+                            if (activeId && newMsg.receiver_id === currentUserId) {
+                                markLeadAsRead(activeId).catch(() => {});
+                            }
+                        } else {
+                            // Update chat history/notifications globally since either I sent it from another device or I received it
+                            fetchData();
+                        }
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [activeId, supabase]);
+
+    const handleSendMessage = async () => {
+        if (!advisorReply.trim() || !activeId) return;
+        
+        const messageToSend = advisorReply;
+        setAdvisorReply('');
+        
+        // Optimistic UI Update (Instant Render)
+        const tempMsgId = crypto.randomUUID();
+        const optimisticMsg = {
+            id: tempMsgId,
+            lead_id: activeId,
+            sender_id: currentUserId || '',
+            message: messageToSend,
+            created_at: new Date().toISOString()
+        };
+        setChatMessages(prev => [...prev, optimisticMsg]);
+        
+        try {
+            // Background HTTP DB Mutation
+            await sendChatMessage(activeId, messageToSend);
+        } catch (error) {
+            console.error(error);
+            // Revert on failure
+            setChatMessages(prev => prev.filter(m => m.id !== tempMsgId));
+            toast.error('Error al enviar mensaje');
+        }
+    };
 
     const activeMessage = messages.find(m => m.id === activeId);
 
@@ -99,46 +199,60 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                             <p className="text-xs font-bold uppercase tracking-widest">Cargando leads...</p>
                         </div>
                     ) : filteredMessages.length > 0 ? (
-                        filteredMessages.map((msg) => (
-                            <div 
-                                key={msg.id}
-                                onClick={() => setActiveId(msg.id)}
-                                className={`p-4 border-b border-slate-100 cursor-pointer transition-all hover:bg-white relative group ${activeId === msg.id ? 'bg-white' : ''}`}
-                            >
-                                {activeId === msg.id && (
-                                    <motion.div layoutId="activeMsg" className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-full" />
-                                )}
-                                
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className={`text-[13px] font-black ${msg.hasNew ? 'text-slate-900' : 'text-slate-600'}`}>
-                                        {msg.senderName}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 font-bold">{msg.timestamp}</span>
-                                </div>
-                                
-                                <div className="flex items-center gap-1.5 mb-2">
-                                    <Building2 size={10} className="text-slate-400" />
-                                    <span className="text-[10px] text-slate-500 font-bold truncate max-w-[200px] uppercase tracking-wider">{msg.propertyTitle}</span>
-                                </div>
-                                
-                                <p className="text-xs text-slate-400 line-clamp-1 leading-relaxed">
-                                    {msg.message}
-                                </p>
+                        filteredMessages.map((msg) => {
+                            const isUnread = msg.status === 'new' || (mode === 'user' && msg.status === 'replied');
+                            return (
+                                <div 
+                                    key={msg.id}
+                                    onClick={() => setActiveId(msg.id)}
+                                    className={`p-5 border-b cursor-pointer transition-all relative group ${
+                                        activeId === msg.id 
+                                        ? 'bg-white border-transparent shadow-[4px_0_24px_-4px_rgba(0,0,0,0.05)] z-10' 
+                                        : isUnread
+                                            ? 'bg-indigo-50/50 border-indigo-100 hover:bg-white'
+                                            : 'bg-transparent border-slate-100 hover:bg-white'
+                                    }`}
+                                >
+                                    {activeId === msg.id && (
+                                        <motion.div layoutId="activeMsg" className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-full" />
+                                    )}
+                                    
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[13px] font-black tracking-tight ${isUnread ? 'text-slate-900' : 'text-slate-600'}`}>
+                                                {msg.senderName}
+                                            </span>
+                                            {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.5)]"></span>}
+                                        </div>
+                                        <span className={`text-[10px] font-bold ${isUnread ? 'text-indigo-600' : 'text-slate-400'}`}>{msg.timestamp}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-1.5 mb-2.5">
+                                        <Building2 size={12} className={isUnread ? "text-indigo-400" : "text-slate-400"} />
+                                        <span className={`text-[10px] font-bold truncate max-w-[200px] uppercase tracking-wider ${isUnread ? 'text-indigo-900' : 'text-slate-500'}`}>
+                                            {msg.propertyTitle}
+                                        </span>
+                                    </div>
+                                    
+                                    <p className={`text-xs line-clamp-2 leading-relaxed pr-2 ${isUnread ? 'text-slate-600 font-bold' : 'text-slate-400'}`}>
+                                        {msg.message}
+                                    </p>
 
-                                {msg.status === 'replied' && (
-                                    <div className="mt-2 flex items-center gap-1 text-[9px] text-emerald-600 font-black uppercase tracking-widest">
-                                        <CheckCircle2 size={10} />
-                                        {mode === 'advisor' ? 'Respondido' : 'Nueva Respuesta'}
-                                    </div>
-                                )}
-                                {msg.status === 'sent' && (
-                                    <div className="mt-2 flex items-center gap-1 text-[9px] text-blue-500 font-black uppercase tracking-widest">
-                                        <Clock size={10} />
-                                        Enviado
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                                    {msg.status === 'replied' && (
+                                        <div className="mt-3 flex items-center gap-1.5 text-[9px] text-emerald-600 font-black uppercase tracking-widest bg-emerald-50 w-fit px-2 py-1 rounded-md">
+                                            <CheckCircle2 size={10} />
+                                            {mode === 'advisor' ? 'Respondido' : 'Nueva Respuesta'}
+                                        </div>
+                                    )}
+                                    {msg.status === 'sent' && (
+                                        <div className="mt-3 flex items-center gap-1.5 text-[9px] text-blue-500 font-black uppercase tracking-widest bg-blue-50 w-fit px-2 py-1 rounded-md">
+                                            <Clock size={10} />
+                                            Enviado
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })
                     ) : (
                         <div className="p-12 text-center flex flex-col items-center gap-4">
                             <SearchX className="text-slate-200" size={48} />
@@ -202,7 +316,8 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                             </div>
 
                             {/* Conversation */}
-                            <div className="flex-1 p-8 overflow-y-auto space-y-6">
+                            <div className="flex-1 p-8 overflow-y-auto space-y-6 custom-scrollbar flex flex-col">
+                                {/* Initial Inquiry */}
                                 <div className="flex flex-col gap-2 max-w-2xl">
                                     <div className="bg-slate-100 p-5 rounded-3xl rounded-tl-none border border-slate-200 shadow-sm shadow-slate-200/20">
                                         <p className="text-sm text-slate-700 leading-relaxed font-medium">
@@ -212,46 +327,82 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                                     <span className="text-[10px] text-slate-400 font-bold pl-2">{activeMessage.timestamp}</span>
                                 </div>
 
-                                {activeMessage.status === 'replied' && (
-                                    <div className="flex flex-col items-end gap-2 text-right">
-                                        <div className="bg-indigo-600 p-5 rounded-3xl rounded-tr-none text-white shadow-xl shadow-indigo-600/20">
-                                            <p className="text-sm font-medium leading-relaxed">
-                                                Hola {activeMessage.senderName.split(' ')[0]}, ¡con gusto! El sábado a las 10 AM estaré esperándote en la propiedad. ¿Te parece bien?
-                                            </p>
+                                {/* Dynamic DB Messages */}
+                                {chatMessages.map(msg => {
+                                    const isMine = msg.sender_id === currentUserId;
+                                    return (
+                                        <div key={msg.id} className={`flex flex-col gap-2 max-w-2xl ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
+                                            <div className={`p-5 rounded-3xl shadow-sm ${
+                                                isMine 
+                                                ? 'bg-indigo-600 rounded-tr-none text-white shadow-indigo-600/20' 
+                                                : 'bg-slate-100 rounded-tl-none border border-slate-200 text-slate-700 shadow-slate-200/20'
+                                            }`}>
+                                                <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                                                    {msg.message}
+                                                </p>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 font-bold px-2 whitespace-nowrap">
+                                                {new Date(msg.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })} • {isMine ? 'Enviado' : 'Recibido'}
+                                            </span>
                                         </div>
-                                        <span className="text-[10px] text-slate-400 font-bold pr-2">Ayer • Respondido</span>
-                                    </div>
-                                )}
+                                    );
+                                })}
                             </div>
 
-                            {/* Reply Box - Only for Advisor */}
-                            {mode === 'advisor' ? (
-                                <div className="p-6 p-t-0 p-b-10 bg-white">
-                                    <div className="relative group">
+                            {/* Reply Box */}
+                            <div className="p-6 p-t-0 p-b-10 bg-white border-t border-slate-100">
+                                <div className="relative group flex flex-col gap-2">
+                                    <div className="flex justify-between items-center px-4 pt-2">
+                                        {mode === 'advisor' ? (
+                                            <button 
+                                                onClick={() => setAdvisorReply(`Hola ${activeMessage.senderName.split(' ')[0]}, me gustaría invitarte a conocer la propiedad. Por favor haz clic en el botón 'Agendar Cita' para agendar el recorrido.`)}
+                                                className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1.5"
+                                            >
+                                                <Calendar size={12} /> Solicitar Cita
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={() => setIsScheduleModalOpen(true)}
+                                                className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1.5"
+                                            >
+                                                <Calendar size={12} /> Agendar Cita
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="relative">
                                         <textarea 
-                                            placeholder="Escribe tu respuesta comercial..."
+                                            value={advisorReply}
+                                            onChange={(e) => setAdvisorReply(e.target.value)}
+                                            placeholder="Escribe tu mensaje..."
                                             className="w-full p-6 pb-16 bg-slate-50 border border-slate-200 rounded-[2rem] text-sm font-medium focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none"
-                                            rows={4}
+                                            rows={3}
+                                            onKeyDown={(e) => {
+                                                if(e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleSendMessage();
+                                                }
+                                            }}
                                         />
                                         <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                                            <button className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95">
+                                            <button 
+                                                onClick={handleSendMessage}
+                                                className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95">
                                                 <Send size={16} />
-                                                RESPONDER AHORA
+                                                ENVIAR
                                             </button>
                                         </div>
                                     </div>
+                                </div>
+                                {mode === 'advisor' ? (
                                     <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
                                         Tip: Una respuesta rápida aumenta el 40% las posibilidades de cierre
                                     </p>
-                                </div>
-                            ) : (
-                                <div className="p-8 bg-indigo-50/50 border-t border-indigo-100 flex items-center justify-center gap-3">
-                                    <AlertCircle className="text-indigo-600" size={16} />
-                                    <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">
-                                        Tu asesor revisará este mensaje y te responderá por este medio
+                                ) : (
+                                    <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                                        Responde a tu asesor o programa una visita
                                     </p>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </motion.div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
@@ -270,6 +421,23 @@ export default function AdvisorInbox({ mode = 'advisor' }: AdvisorInboxProps) {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Calendly Modal Implementation */}
+            {activeMessage && (
+                <CalendlyLikeModal
+                    isOpen={isScheduleModalOpen}
+                    onClose={() => setIsScheduleModalOpen(false)}
+                    agentName={mode === 'advisor' ? 'ti' : activeMessage.senderName}
+                    propertyName={activeMessage.propertyTitle}
+                    onSchedule={async (date) => {
+                        try {
+                            await scheduleVisit(activeMessage.id, date);
+                        } catch (err) {
+                            console.error("Error setting appointment:", err);
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 }

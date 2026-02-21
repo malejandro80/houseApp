@@ -321,9 +321,9 @@ export async function getAdvisorLeads(): Promise<LeadMessage[]> {
         senderPhone: lead.client_phone || '',
         propertyTitle: (lead as any).property?.title || (lead as any).property?.address || lead.title || 'Propiedad no especificada',
         message: lead.message || lead.title,
-        status: lead.stage_id ? 'new' : 'archived', // Basic mapping
+        status: (lead.metadata && lead.metadata.read_by_advisor === true) ? 'replied' : (lead.stage_id ? 'new' : 'archived'),
         timestamp: new Date(lead.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
-        hasNew: true,
+        hasNew: !(lead.metadata && lead.metadata.read_by_advisor === true),
         propertyId: lead.property_id
     }));
 }
@@ -336,7 +336,7 @@ export async function getUserInquiries(): Promise<LeadMessage[]> {
     try {
         const { data: leads, error } = await supabase
             .from('leads')
-            .select('*, property:properties(title, address), advisor:profiles!advisor_id(full_name)')
+            .select('*, property:properties(title, address)')
             .eq('created_by', user.id)
             .order('created_at', { ascending: false });
 
@@ -345,22 +345,209 @@ export async function getUserInquiries(): Promise<LeadMessage[]> {
             throw error;
         }
 
+        const advisorIds = Array.from(new Set(leads.map(l => l.advisor_id).filter(Boolean)));
+        let profileMap: Record<string, string> = {};
+        
+        if (advisorIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', advisorIds);
+                
+            if (profiles) {
+                profileMap = profiles.reduce((acc, p) => {
+                    acc[p.id] = p.full_name || 'Asesor Asignado';
+                    return acc;
+                }, {} as Record<string, string>);
+            }
+        }
+
         return leads.map(lead => ({
             id: lead.id,
-            senderName: (lead as any).advisor?.full_name || 'Asesor Asignado',
+            senderName: profileMap[lead.advisor_id] || 'Asesor Asignado',
             senderEmail: '',
             senderPhone: '',
             propertyTitle: (lead as any).property?.title || (lead as any).property?.address || lead.title || 'Propiedad de interés',
             message: lead.message || lead.title,
-            status: lead.stage_id ? 'sent' : 'archived',
+            status: (lead.metadata && lead.metadata.read_by_user === true) ? 'sent' : 'replied',
             timestamp: new Date(lead.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }),
-            hasNew: false,
+            hasNew: !(lead.metadata && lead.metadata.read_by_user === true),
             propertyId: lead.property_id
         }));
-    } catch (err) {
+    } catch (err: any) {
         console.error('Server Action getUserInquiries failed:', err);
+        try {
+            const { createClient: createSupClient } = require('@supabase/supabase-js');
+            const admin = createSupClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            await admin.from('error_logs').insert({ 
+                user_id: user?.id,
+                context: 'getUserInquiries',
+                message: err?.message || JSON.stringify(err),
+                stack_trace: err?.stack || '',
+                environment: process.env.NODE_ENV
+            });
+        } catch {}
         throw err;
     }
 }
 
+export async function scheduleVisit(leadId: string, scheduledDate: Date) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
+
+    // Get 'visita' stage
+    const { data: stage } = await supabase
+        .from('kanban_stages')
+        .select('id')
+        .eq('slug', 'visita')
+        .single();
+    if (!stage) throw new Error('Stage not found');
+
+    const { error } = await supabase
+        .from('leads')
+        .update({
+            stage_id: stage.id,
+            updated_at: scheduledDate.toISOString(),
+        })
+        .eq('id', leadId);
+        
+    if (error) throw error;
+    revalidatePath('/advisor/pipeline');
+    revalidatePath('/advisor/calendar');
+    revalidatePath('/advisor/inbox');
+    revalidatePath('/my-properties/messages');
+}
+
+export async function markLeadAsRead(leadId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false };
+
+    const { data: lead, error: fetchErr } = await supabase
+        .from('leads')
+        .select('metadata, advisor_id, created_by')
+        .eq('id', leadId)
+        .single();
+
+    if (fetchErr || !lead) return { success: false };
+
+    // Check permissions
+    if (lead.advisor_id !== user.id && lead.created_by !== user.id) return { success: false };
+
+    const roleKey = lead.advisor_id === user.id ? 'read_by_advisor' : 'read_by_user';
+    
+    // Only update if not already read
+    const currentMetadata = lead.metadata || {};
+    if (currentMetadata[roleKey] === true) {
+        return { success: true };
+    }
+
+    const newMetadata = { ...currentMetadata, [roleKey]: true };
+
+    const { error: updateErr } = await supabase
+        .from('leads')
+        .update({ metadata: newMetadata })
+        .eq('id', leadId);
+
+    if (!updateErr) {
+        revalidatePath('/advisor/inbox');
+        revalidatePath('/my-properties/messages');
+        return { success: true };
+    }
+    return { success: false };
+}
+
+export async function getLeadMessages(leadId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    try {
+
+        const { data, error } = await supabase
+            .from('lead_messages')
+            .select(`
+                id,
+                message,
+                created_at,
+                sender_id
+            `)
+            .eq('lead_id', leadId)
+            .order('created_at', { ascending: true });
+            
+        if (error) {
+            console.error('getLeadMessages err:', error);
+            return [];
+        }
+        return data;
+    } catch (e: any) {
+        try {
+            const { createClient: createSupClient } = require('@supabase/supabase-js');
+            const admin = createSupClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            await admin.from('error_logs').insert({ 
+                user_id: user?.id,
+                context: 'getLeadMessages',
+                message: e?.message || JSON.stringify(e),
+                stack_trace: e?.stack || '',
+                environment: process.env.NODE_ENV
+            });
+        } catch {}
+        throw e;
+    }
+}
+
+export async function sendChatMessage(leadId: string, message: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
+
+    try {
+        
+        // insert message
+        const { error } = await supabase
+            .from('lead_messages')
+            .insert({
+                lead_id: leadId,
+                sender_id: user.id,
+                message: message
+            });
+            
+        if (error) throw error;
+        
+        // update lead metadata so it shows as unread for the OTHER party
+        const { data: lead } = await supabase.from('leads').select('advisor_id, created_by, metadata').eq('id', leadId).single();
+        if (lead) {
+            const isAdvisor = lead.advisor_id === user.id;
+            const currentMetadata = lead.metadata || {};
+            
+            if (isAdvisor) {
+                currentMetadata.read_by_user = false;
+            } else {
+                currentMetadata.read_by_advisor = false;
+            }
+            
+            const { error: updateError } = await supabase.from('leads').update({
+                metadata: currentMetadata,
+                updated_at: new Date().toISOString()
+            }).eq('id', leadId);
+            
+            if (updateError) throw updateError;
+        }
+        
+    } catch (e: any) {
+        try {
+            const { createClient: createSupClient } = require('@supabase/supabase-js');
+            const admin = createSupClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+            await admin.from('error_logs').insert({ 
+                user_id: user?.id,
+                context: 'sendChatMessage',
+                message: e?.message || JSON.stringify(e),
+                stack_trace: e?.stack || '',
+                environment: process.env.NODE_ENV
+            });
+        } catch {}
+        throw e;
+    }
+}
 

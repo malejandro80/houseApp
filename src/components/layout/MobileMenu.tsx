@@ -83,6 +83,13 @@ export default function MobileMenu({ user }: MobileMenuProps) {
                     Pipeline de Ventas
                   </Link>
                   <Link 
+                    href="/advisor/calendar" 
+                    className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-slate-50 hover:text-indigo-700 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Calendario de Visitas
+                  </Link>
+                  <Link 
                     href="/advisor/inbox" 
                     className="block px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-slate-50 hover:text-indigo-700 transition-colors"
                     onClick={() => setIsOpen(false)}

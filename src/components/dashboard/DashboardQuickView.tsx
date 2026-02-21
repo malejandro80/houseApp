@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar, MessageSquare, User, MapPin, ArrowRight } from 'lucide-react';
 import { Lead } from '@/common/types/leads';
 import Link from 'next/link';
+import { startOfToday, endOfWeek, isBefore, isAfter } from 'date-fns';
 
 interface DashboardQuickViewProps {
     weeklyVisits: Lead[];
@@ -11,9 +12,32 @@ interface DashboardQuickViewProps {
 }
 
 export default function DashboardQuickView({ weeklyVisits, pendingLeads }: DashboardQuickViewProps) {
+    const [visitTab, setVisitTab] = useState<'this_week' | 'next_week'>('this_week');
+
+    const today = startOfToday();
+    const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 }); // Monday start
+
+    // Exclude overdue appointments
+    const validVisits = (weeklyVisits || []).filter(lead => {
+        const visitDate = new Date(lead.updated_at);
+        return !isBefore(visitDate, today);
+    });
+
+    const thisWeekVisits = validVisits.filter(lead => {
+        const visitDate = new Date(lead.updated_at);
+        return !isAfter(visitDate, endOfCurrentWeek);
+    });
+
+    const nextWeekVisits = validVisits.filter(lead => {
+        const visitDate = new Date(lead.updated_at);
+        return isAfter(visitDate, endOfCurrentWeek);
+    });
+
+    const displayedVisits = visitTab === 'this_week' ? thisWeekVisits : nextWeekVisits;
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
-            {/* Visitas de esta semana */}
+            {/* Visitas Programadas */}
             <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
@@ -21,18 +45,41 @@ export default function DashboardQuickView({ weeklyVisits, pendingLeads }: Dashb
                             <Calendar size={24} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Visitas de esta semana</h3>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Visitas Programadas</h3>
                             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-0.5">Gestión de Citas</p>
                         </div>
                     </div>
                     <span className="bg-amber-100 text-amber-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
-                        {weeklyVisits.length} Pendientes
+                        {displayedVisits.length} Pendientes
                     </span>
                 </div>
 
+                <div className="flex bg-slate-50 p-1.5 rounded-xl mb-6">
+                    <button 
+                        onClick={() => setVisitTab('this_week')}
+                        className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                            visitTab === 'this_week' 
+                            ? 'bg-white text-indigo-600 shadow-sm' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        Esta Semana
+                    </button>
+                    <button 
+                        onClick={() => setVisitTab('next_week')}
+                        className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                            visitTab === 'next_week' 
+                            ? 'bg-white text-indigo-600 shadow-sm' 
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        Próxima Semana
+                    </button>
+                </div>
+
                 <div className="flex-1 space-y-4">
-                    {weeklyVisits.length > 0 ? (
-                        weeklyVisits.slice(0, 3).map((lead) => (
+                    {displayedVisits.length > 0 ? (
+                        displayedVisits.slice(0, 3).map((lead) => (
                             <div key={lead.id} className="group p-5 bg-slate-50 rounded-3xl hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
                                 <div className="flex justify-between items-start mb-2">
                                     <h4 className="font-black text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">{lead.title}</h4>
@@ -49,7 +96,9 @@ export default function DashboardQuickView({ weeklyVisits, pendingLeads }: Dashb
                             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300">
                                 <Calendar size={32} />
                             </div>
-                            <p className="text-slate-400 text-sm font-bold">No hay visitas programadas para esta semana</p>
+                            <p className="text-slate-400 text-sm font-bold">
+                                {visitTab === 'this_week' ? 'No hay visitas programadas para esta semana' : 'No hay visitas programadas para la próxima semana'}
+                            </p>
                         </div>
                     )}
                 </div>
@@ -82,7 +131,6 @@ export default function DashboardQuickView({ weeklyVisits, pendingLeads }: Dashb
                             <div key={lead.id} className="group p-5 bg-slate-50 rounded-3xl hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
                                 <div className="flex justify-between items-start mb-2">
                                     <h4 className="font-black text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">{lead.title}</h4>
-                                    <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[9px] font-black rounded-full uppercase tracking-tighter">Prioridad {lead.priority}</span>
                                 </div>
                                 <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
                                     <div className="flex items-center gap-1.5"><User size={12} /> {lead.client_name}</div>

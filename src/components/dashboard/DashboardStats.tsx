@@ -9,7 +9,8 @@ import {
   PieChart, 
   Target,
   ArrowUpRight,
-  ShieldCheck
+  ShieldCheck,
+  Home
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -70,11 +71,11 @@ export default function DashboardStats({ userId }: { userId: string }) {
     );
   }
 
-  if (!stats || stats.totalProperties === 0) return null;
+  if (!stats) return null;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {/* Portfolio Value */}
+      {/* Managed Properties */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -82,17 +83,17 @@ export default function DashboardStats({ userId }: { userId: string }) {
       >
         <div className="flex items-center justify-between mb-4">
           <div className="p-2 bg-blue-50 rounded-lg text-blue-700 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-            <DollarSign size={20} aria-hidden="true" />
+            <Home size={20} aria-hidden="true" />
           </div>
-          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-wider">Portfolio</span>
+          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-wider">Portafolio</span>
         </div>
-        <p className="text-gray-700 text-xs font-bold uppercase tracking-tight mb-1">Valor Total</p>
+        <p className="text-gray-700 text-xs font-bold uppercase tracking-tight mb-1">Unidades Gestionadas</p>
         <h3 className="text-2xl font-black text-gray-900">
-          ${(stats.totalValue / 1000000).toFixed(1)}M
+          {stats.totalProperties}
         </h3>
-        <p className="text-[10px] text-gray-600 mt-2 flex items-center gap-1 font-medium">
-          <ArrowUpRight size={10} className="text-green-600" aria-hidden="true" /> 
-          Basado en {stats.totalProperties} propiedades
+        <p className="text-[10px] text-gray-600 mt-2 flex items-center font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse" />
+          {stats.activeListings} activos en el mercado
         </p>
       </motion.div>
 
